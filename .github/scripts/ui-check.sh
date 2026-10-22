@@ -28,6 +28,8 @@ adb shell am start -W -n $ACT --es open_tab halls
 shot 04-halls 3
 adb shell am start -W -n $ACT --es open_tab schedule --es event_date 2026-10-27
 shot 05-schedule-1027 3
+swipe_up
+shot 05b-schedule-1027-scrolled 2
 adb shell am start -W -n $ACT --es open_tab mylist
 shot 06-mylist 3
 adb shell am start -W -n $ACT --es open_tab links

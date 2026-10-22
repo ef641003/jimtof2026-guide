@@ -51,7 +51,6 @@ import jp.fairguide.jimtof2026.logic.timeRange
 import jp.fairguide.jimtof2026.ui.components.BulletText
 import jp.fairguide.jimtof2026.ui.components.LabeledRow
 import jp.fairguide.jimtof2026.ui.components.SectionCard
-import jp.fairguide.jimtof2026.ui.components.Tag
 import java.time.LocalDate
 import java.time.ZonedDateTime
 
@@ -240,27 +239,27 @@ private fun DaysCard(days: List<FairDay>, today: LocalDate) {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "${index + 1}日目",
-                    modifier = Modifier.width(52.dp),
+                    text = if (isToday) "今日" else "${index + 1}日目",
+                    modifier = Modifier.width(44.dp),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                    color = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
                 )
                 Text(
                     text = day.date.jpShort(),
                     modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyMedium,
                     fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                    maxLines = 1,
                 )
                 Text(
                     text = "${day.open.hm()}〜${day.close.hm()}",
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyMedium,
                     fontWeight = if (shortDay) FontWeight.Bold else FontWeight.Normal,
                     color = if (shortDay) MaterialTheme.colorScheme.secondary else Color.Unspecified,
+                    maxLines = 1,
                 )
-                if (isToday) {
-                    Spacer(Modifier.width(6.dp))
-                    Tag("今日", MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.onPrimary)
-                }
             }
         }
         Spacer(Modifier.height(6.dp))

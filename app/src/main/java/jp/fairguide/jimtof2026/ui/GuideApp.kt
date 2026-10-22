@@ -39,7 +39,7 @@ enum class AppTab(val key: String, val label: String, val title: String, val ico
     OVERVIEW("overview", "概要", "会期・入場", Icons.Filled.Home),
     HALLS("halls", "ホール", "ホールと出展分野", Icons.Filled.Place),
     SCHEDULE("schedule", "予定", "講演・ワークショップ", Icons.Filled.DateRange),
-    MY_LIST("mylist", "マイリスト", "回りたいブース", Icons.Filled.Star),
+    MY_LIST("mylist", "ブース", "回りたいブース（マイリスト）", Icons.Filled.Star),
     LINKS("links", "リンク", "アクセス・公式リンク", Icons.Filled.Info);
 
     companion object {

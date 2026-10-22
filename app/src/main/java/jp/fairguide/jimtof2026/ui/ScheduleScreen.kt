@@ -6,6 +6,7 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -74,6 +75,7 @@ fun ScheduleScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState) {
     val today = vm.now.withZoneSameInstant(FAIR_ZONE).toLocalDate()
     val selectedDate = vm.scheduleDate?.takeIf { it in dates } ?: (if (today in dates) today else dates.first())
     var categoryKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var notesExpanded by rememberSaveable { mutableStateOf(false) }
 
     val events = remember(data, selectedDate, categoryKey) {
         data.events
@@ -176,7 +178,7 @@ fun ScheduleScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState) {
         }
         item {
             GuideCard(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
-                if (selectedDate != dates.first() && selectedDate.isAfter(data.days.last().date)) {
+                if (selectedDate.isAfter(data.days.last().date)) {
                     Text(
                         text = "会期の翌日の予定です",
                         style = MaterialTheme.typography.bodyMedium,
@@ -184,12 +186,28 @@ fun ScheduleScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState) {
                         color = MaterialTheme.colorScheme.secondary,
                     )
                 }
-                data.scheduleNotes.forEach { BulletText(it) }
-                Text(
-                    text = "ベルを押すと開始${ReminderScheduler.LEAD_MINUTES}分前に通知します",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { notesExpanded = !notesExpanded },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "ベルで開始${ReminderScheduler.LEAD_MINUTES}分前に通知。講演は事前申込制です",
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = if (notesExpanded) "閉じる" else "注意事項",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                if (notesExpanded) {
+                    Spacer(Modifier.height(6.dp))
+                    data.scheduleNotes.forEach { BulletText(it) }
+                }
             }
         }
         if (events.isEmpty()) {
