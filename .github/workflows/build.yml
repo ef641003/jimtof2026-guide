@@ -1,0 +1,75 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-apk
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build and test
+        id: build
+        shell: bash
+        run: |
+          set -o pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon --stacktrace testReleaseUnitTest assembleRelease 2>&1 | tee build.log
+
+      # ビルド結果（APK・ログ）を build-output ブランチに置く。成功・失敗どちらでも実行する
+      - name: Publish result to build-output branch
+        if: always()
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.build.outcome }}
+          TOKEN: ${{ github.token }}
+        run: |
+          OUT="$RUNNER_TEMP/out"
+          mkdir -p "$OUT"
+          cp build.log "$OUT/build.log" 2>/dev/null || echo "no log" > "$OUT/build.log"
+          {
+            echo "status=$OUTCOME"
+            echo "commit=$GITHUB_SHA"
+            echo "run=$GITHUB_RUN_NUMBER"
+            echo "time=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          } > "$OUT/status.txt"
+          APK=app/build/outputs/apk/release/app-release.apk
+          if [ -f "$APK" ]; then cp "$APK" "$OUT/JIMTOF2026Guide.apk"; fi
+          if [ -d app/build/reports/tests ]; then (cd app/build/reports && zip -qr "$OUT/test-report.zip" tests) || true; fi
+          cd "$OUT"
+          git init -q -b build-output
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Build #$GITHUB_RUN_NUMBER: $OUTCOME"
+          git push -q --force "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" build-output
+
+      # 成功したら Releases にAPKを添付する（スマホのブラウザからダウンロードできる）
+      - name: Create release
+        if: steps.build.outcome == 'success'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NAME="JIMTOF2026Guide-build${GITHUB_RUN_NUMBER}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "$NAME"
+          gh release create "build-${GITHUB_RUN_NUMBER}" "$NAME" \
+            --target "$GITHUB_SHA" \
+            --title "JIMTOF2026 ガイド build ${GITHUB_RUN_NUMBER}" \
+            --notes "GitHub Actions で自動ビルドしたAPKです。Androidスマホでダウンロードしてインストールしてください。"

@@ -1,0 +1,298 @@
+{
+  "info": {
+    "title": "JIMTOF2026",
+    "nameJa": "第33回 日本国際工作機械見本市",
+    "nameEn": "The 33rd Japan International Machine Tool Fair",
+    "period": "2026年10月26日（月）〜31日（土）",
+    "venue": "東京ビッグサイト",
+    "address": "東京都江東区有明3-11-1",
+    "halls": "東1〜3・7・8、西1〜4・アトリウム、南1〜4ホール（東4〜6ホールは改修工事のため休館）",
+    "area": "92,850m²",
+    "scale": "22カ国・地域 1,134社・4,422小間（共同・内部出展者を含む。9/28主催者発表）",
+    "organizers": "日本工作機械工業会、東京ビッグサイト",
+    "registrationUrl": "https://reg2026.jimtof.org/public?lang=ja",
+    "mypageUrl": "https://reg2026.jimtof.org/public/mypage?lang=ja",
+    "officialUrl": "https://www.jimtof.org/jp/",
+    "verifiedOn": "2026年10月22日",
+    "sourceNote": "公式サイト（jimtof.org）・主催者発表・東京ビッグサイト公式サイトの情報にもとづきます"
+  },
+  "days": [
+    { "date": "2026-10-26", "open": "10:00", "close": "17:00" },
+    { "date": "2026-10-27", "open": "10:00", "close": "17:00" },
+    { "date": "2026-10-28", "open": "10:00", "close": "17:00" },
+    { "date": "2026-10-29", "open": "10:00", "close": "17:00" },
+    { "date": "2026-10-30", "open": "10:00", "close": "17:00" },
+    { "date": "2026-10-31", "open": "10:00", "close": "16:00" }
+  ],
+  "admission": [
+    { "label": "招待券", "price": "無料", "note": "出展者から配布。招待券の番号でWeb来場登録（電子招待券は専用ページから）" },
+    { "label": "前売（Web）", "price": "1,000円", "note": "10/25（日）まで。クレジットカード決済" },
+    { "label": "会期中（Web）", "price": "3,000円", "note": "10/26〜10/31 15:00。クレジットカード決済" },
+    { "label": "会期中（会場）", "price": "3,000円", "note": "購入窓口で現金のみ" },
+    { "label": "高校生以上の学生", "price": "無料", "note": "来場登録が必要。当日学生証を提示（提示できないと3,000円）" },
+    { "label": "中学生以下", "price": "無料", "note": "保護者・引率者が同伴なら登録不要" }
+  ],
+  "visitorNotes": [
+    "来場者証はA4用紙にカラー印刷して持参します（マイページから再印刷可。会場にセルフ発券所あり）",
+    "来場者証は会期中ずっと有効で、何度でも再入場できます",
+    "来場者証は登録した本人だけが使えます",
+    "当日の会場登録は混雑で時間がかかることがあるため、事前登録がおすすめです",
+    "講演会・セミナーの聴講にも来場登録が必要です",
+    "実演中の機械が多いため、子ども連れは手をつないで見学してください"
+  ],
+  "notices": [
+    { "text": "招待券での来場登録はメンテナンス中です（10/23 18:00ごろまで・予定）", "until": "2026-10-23T18:00" },
+    { "text": "前売入場券（1,000円）は10/25（日）まで。10/26以降は3,000円です", "until": "2026-10-26T00:00" },
+    { "text": "Web来場登録は10/31（土）15:00まで", "until": "2026-10-31T15:00" }
+  ],
+  "halls": [
+    {
+      "id": "E1-3",
+      "name": "東1〜3ホール",
+      "location": "東展示棟 1F",
+      "prefixes": ["E1", "E2", "E3"],
+      "categories": ["工作機械", "鍛圧機械", "制御装置・関連ソフトウェア", "その他関連機器"],
+      "highlights": ["東展示棟ガレリアで企画展示①「あらゆる現場で働くロボットの未来図」（人型ロボット「Kaleido」と工作機械）"],
+      "mapUrl": "https://www.jimtof.org/map/jp/e1-3_booth/e1-3.html",
+      "pdfUrl": "https://www.jimtof.org/files/map/JIMTOF2026_%E5%B0%8F%E9%96%93%E5%89%B2E1-3.pdf"
+    },
+    {
+      "id": "E7-8",
+      "name": "東7〜8ホール",
+      "location": "東展示棟 1F",
+      "prefixes": ["E7", "E8"],
+      "categories": ["工作機械", "精密測定機器", "光学測定機器", "試験機器"],
+      "highlights": ["東7ホール内にケータリングカー（JIMTOF Food Festival）", "駅からいちばん遠いホールです"],
+      "mapUrl": "https://www.jimtof.org/map/jp/e7-8_booth/e7-8.html",
+      "pdfUrl": "https://www.jimtof.org/files/map/JIMTOF2026_%E5%B0%8F%E9%96%93%E5%89%B2E7-8.pdf"
+    },
+    {
+      "id": "W1-2",
+      "name": "西1〜2ホール・アトリウム",
+      "location": "西展示棟 1F",
+      "prefixes": ["W1", "W2", "WA"],
+      "categories": ["機械工具", "工作機器"],
+      "highlights": [],
+      "mapUrl": "https://www.jimtof.org/map/jp/w1-2_booth/w1-2.html",
+      "pdfUrl": "https://www.jimtof.org/files/map/JIMTOF2026_%E5%B0%8F%E9%96%93%E5%89%B2w1-2.pdf"
+    },
+    {
+      "id": "W3-4",
+      "name": "西3〜4ホール",
+      "location": "西展示棟 4F",
+      "prefixes": ["W3", "W4"],
+      "categories": ["ダイヤモンド／CBN工具", "研削砥石・研磨剤", "油圧・空気圧・水圧機器", "歯車・歯車装置", "機械工具", "工作機器", "その他関連機器"],
+      "highlights": ["西屋上展示場にケータリングカーと「ワールドライスフェア」"],
+      "mapUrl": "https://www.jimtof.org/map/jp/w3-4_booth/w3-4.html",
+      "pdfUrl": "https://www.jimtof.org/files/map/JIMTOF2026_%E5%B0%8F%E9%96%93%E5%89%B2w3-4.pdf"
+    },
+    {
+      "id": "S1-2",
+      "name": "南1〜2ホール",
+      "location": "南展示棟 1F",
+      "prefixes": ["S1", "S2"],
+      "categories": ["工作機械", "制御装置・関連ソフトウェア", "その他関連機器"],
+      "highlights": [],
+      "mapUrl": "https://www.jimtof.org/map/jp/s1-2_booth/s1-2.html",
+      "pdfUrl": "https://www.jimtof.org/files/map/JIMTOF2026_%E5%B0%8F%E9%96%93%E5%89%B2S1-2.pdf"
+    },
+    {
+      "id": "S3-4",
+      "name": "南3〜4ホール",
+      "location": "南展示棟 4F",
+      "prefixes": ["S3", "S4"],
+      "categories": ["工作機器", "精密測定機器", "制御装置・関連ソフトウェア", "出版", "その他関連機器"],
+      "highlights": [
+        "南4ホール INSIGHTSステージ（講演・ワークショップ）",
+        "AM ZONE（積層造形のワーク展示）",
+        "企画展示②「ものづくりNEXT STAGE」きさげロボットと匠の協業・きさげ体験教室",
+        "きさげの匠：10/26 エグロ、10/27 浜井産業、10/28 TAKISAWA、10/29 三井ハイテック、10/30 安田工業（午前）・カシフジ（午後）、10/31 三井精機工業",
+        "IMEC2026 ポスターセッション、JIMTOF INSIGHTS 特設ブース",
+        "ものづくり体験コーナー、工科高校で学ぶものづくり"
+      ],
+      "mapUrl": "https://www.jimtof.org/map/jp/s3-4_booth/s3-4.html",
+      "pdfUrl": "https://www.jimtof.org/files/map/JIMTOF2026_%E5%B0%8F%E9%96%93%E5%89%B2S3-4.pdf"
+    },
+    {
+      "id": "CT",
+      "name": "会議棟",
+      "location": "講演・会議",
+      "prefixes": [],
+      "categoryLabel": "主な会場",
+      "categories": ["7F 国際会議場", "1F レセプションホール", "6F 605〜608会議室", "7F 703会議室", "1F 101会議室", "プレスセンター"],
+      "highlights": [
+        "7F 国際会議場：基調講演、工作機械トップセミナー",
+        "1F レセプションホール：特別講演、IMEC2026、学生との交流会",
+        "6F 605〜608会議室：出展者ワークショップ"
+      ]
+    }
+  ],
+  "hallNotes": [
+    "小間番号の先頭の英字がホールを表します（E＝東、W＝西、S＝南、WA＝西アトリウム）。例：E1024 → 東1ホール",
+    "東4〜6ホールは東京ビッグサイトの改修工事のため休館です",
+    "会場内は無料の巡回シャトルバスとジャンボタクシーが運行します（ルート・時間は会場で確認）",
+    "ブースのピン留めや拡大マップは、主催者公式メディア「JIMTOF Guide & Map」（リンクタブ）でも使えます"
+  ],
+  "scheduleNotes": [
+    "講演会・セミナーは事前申込制です。空席があれば当日も聴講できます（来場登録が別途必要）",
+    "出展者ワークショップの申込・内容は各出展者に問い合わせてください",
+    "講師・プログラムは予告なく変更されることがあります。カードを押すと公式ページを開きます"
+  ],
+  "events": [
+    { "id": "t-1026-1300-keynote", "date": "2026-10-26", "start": "13:00", "cat": "talk", "label": "基調講演", "title": "変化する世界自動車産業の構図", "speaker": "中西孝樹 氏（ナカニシ自動車産業リサーチ）", "place": "会議棟7F 国際会議場", "entry": "事前申込制（空席があれば当日聴講可）", "url": "https://www.jimtof.org/jp/evt.html" },
+    { "id": "t-1026-1400-kaleido", "date": "2026-10-26", "start": "14:00", "end": "15:00", "cat": "talk", "label": "企画展示 対談", "title": "Kaleido開発者と工作機械メーカーの対談", "speaker": "田中大亮 氏（ニデックマシンツール）ほか", "place": "東展示棟 ガレリア（企画展示①）", "url": "https://www.jimtof.org/jp/evt_show.html" },
+    { "id": "t-1027-1300-3da", "date": "2026-10-27", "start": "13:00", "cat": "talk", "label": "特別講演", "title": "自動車業界における3DAモデルを通したデジタル活用", "speaker": "パネル：トヨタ自動車・本田技研工業・日本自動車工業会・エリジオン（司会：ミツトヨ）", "place": "会議棟1F レセプションホール", "entry": "事前申込は終了（空席があれば当日聴講可）", "url": "https://www.jimtof.org/jp/evt.html" },
+    { "id": "t-1027-1330-formnext", "date": "2026-10-27", "start": "13:30", "cat": "talk", "label": "Formnext Stage", "title": "転換期を迎えるAM（アディティブ・マニュファクチャリング）", "speaker": "Sascha F. Wenzler 氏（Mesago Messe Frankfurt）", "place": "南4ホール INSIGHTSステージ", "entry": "事前申込制（空席があれば当日聴講可）", "url": "https://www.jimtof.org/jp/evt.html" },
+    { "id": "t-1027-1415-vdw", "date": "2026-10-27", "start": "14:15", "cat": "talk", "label": "Formnext Stage", "title": "機械製造におけるAM活用", "speaker": "Markus Heering 氏（VDW）", "place": "南4ホール INSIGHTSステージ", "entry": "事前申込は終了（空席があれば当日聴講可）", "url": "https://www.jimtof.org/jp/evt.html" },
+    { "id": "t-1027-1500-hondajet", "date": "2026-10-27", "start": "15:00", "cat": "talk", "label": "特別講演", "title": "ホンダジェットの開発と事業化への道", "speaker": "藤野道格 氏（前 Honda Aircraft Company 社長 兼 CEO）", "place": "会議棟1F レセプションホール", "entry": "事前申込制（空席があれば当日聴講可）", "url": "https://www.jimtof.org/jp/evt.html" },
+    { "id": "t-1027-1500-renishaw", "date": "2026-10-27", "start": "15:00", "cat": "talk", "label": "Formnext Stage", "title": "金属AMにおける利益率の最大化", "speaker": "Rainer Lotz 氏（Renishaw）", "place": "南4ホール INSIGHTSステージ", "entry": "事前申込制（空席があれば当日聴講可）", "url": "https://www.jimtof.org/jp/evt.html" },
+    { "id": "t-1027-1545-mhi", "date": "2026-10-27", "start": "15:45", "cat": "talk", "label": "Formnext Stage", "title": "航空宇宙分野へのAM適用と開発事例", "speaker": "橘孝洋 氏（三菱重工業）", "place": "南4ホール INSIGHTSステージ", "entry": "事前申込制（空席があれば当日聴講可）", "url": "https://www.jimtof.org/jp/evt.html" },
+    { "id": "t-1027-1630-siemens", "date": "2026-10-27", "start": "16:30", "cat": "talk", "label": "Formnext Stage", "title": "Connect the Missing Link（AMの産業化に向けて）", "speaker": "Karsten Heuser 氏（Siemens）", "place": "南4ホール INSIGHTSステージ", "entry": "事前申込制（空席があれば当日聴講可）", "url": "https://www.jimtof.org/jp/evt.html" },
+    { "id": "a-1028-imec", "date": "2026-10-28", "start": "12:30", "end": "18:00", "cat": "assoc", "label": "IMEC2026", "title": "IMEC2026 オーラルセッション", "speaker": "第21回 国際工作機械技術者会議（テーマ：新たな四半世紀にかける工作機械産業の挑戦）", "place": "会議棟1F レセプションホール", "entry": "有料。申込・問い合わせはIMEC事務局（03-3434-3961）", "url": "https://www.jimtof.org/jp/evt_others.html" },
+    { "id": "a-1029-imec", "date": "2026-10-29", "start": "13:00", "end": "18:00", "cat": "assoc", "label": "IMEC2026", "title": "IMEC2026 オーラルセッション", "speaker": "第21回 国際工作機械技術者会議（テーマ：新たな四半世紀にかける工作機械産業の挑戦）", "place": "会議棟1F レセプションホール", "entry": "有料。申込・問い合わせはIMEC事務局（03-3434-3961）", "url": "https://www.jimtof.org/jp/evt_others.html" },
+    { "id": "a-1028-poster", "date": "2026-10-28", "start": "10:00", "end": "12:00", "cat": "assoc", "label": "IMEC2026", "title": "IMECポスターセッション（説明員在席）", "speaker": "大学・研究機関などの研究成果", "place": "南4ホール", "entry": "ポスター展示は会期中ずっと", "url": "https://www.jimtof.org/jp/evt_others.html" },
+    { "id": "a-1029-poster", "date": "2026-10-29", "start": "10:00", "end": "12:00", "cat": "assoc", "label": "IMEC2026", "title": "IMECポスターセッション（説明員在席）", "speaker": "大学・研究機関などの研究成果", "place": "南4ホール", "entry": "ポスター展示は会期中ずっと", "url": "https://www.jimtof.org/jp/evt_others.html" },
+    { "id": "a-1030-poster", "date": "2026-10-30", "start": "10:00", "end": "12:00", "cat": "assoc", "label": "IMEC2026", "title": "IMECポスターセッション（説明員在席）", "speaker": "大学・研究機関などの研究成果", "place": "南4ホール", "entry": "ポスター展示は会期中ずっと", "url": "https://www.jimtof.org/jp/evt_others.html" },
+    { "id": "a-1028-seimitsu", "date": "2026-10-28", "cat": "assoc", "label": "団体セミナー", "title": "精密測定機器の活用に関するセミナー", "speaker": "日本精密測定機器工業会", "place": "会議棟1F 101会議室", "entry": "事前申込制・無料（テキストは一部有料）。時間は公式ページで確認", "url": "https://www.jimtof.org/jp/evt_others.html" },
+    { "id": "a-1029-jmtba", "date": "2026-10-29", "start": "10:30", "end": "15:25", "cat": "assoc", "label": "団体ワークショップ", "title": "工作機械関連のソフトウェア／計測ワークショップ", "speaker": "日本工作機械工業会", "place": "会議棟7F 703会議室", "entry": "事前申込制・無料", "url": "https://www.jimtof.org/jp/evt_others.html" },
+    { "id": "a-1030-jmtba", "date": "2026-10-30", "start": "10:30", "end": "16:15", "cat": "assoc", "label": "団体ワークショップ", "title": "工作機械関連のソフトウェア／計測ワークショップ", "speaker": "日本工作機械工業会", "place": "会議棟7F 703会議室", "entry": "事前申込制・無料", "url": "https://www.jimtof.org/jp/evt_others.html" },
+    { "id": "t-1030-1045-insights", "date": "2026-10-30", "start": "10:45", "cat": "talk", "label": "INSIGHTS 公開収録", "title": "ツルハシ制作 アフタートークショー", "speaker": "松浦機械製作所・上島熱処理工業所", "place": "南4ホール INSIGHTSステージ", "entry": "事前申込制（空席があれば当日聴講可）", "url": "https://www.jimtof.org/jp/evt.html" },
+    { "id": "t-1030-1100-kaleido", "date": "2026-10-30", "start": "11:00", "end": "12:00", "cat": "talk", "label": "企画展示 対談", "title": "Kaleido開発者と工作機械メーカーの対談", "speaker": "河野邦俊 氏（カシフジ）・澤田洋祐 氏（ヤマザキマザック）ほか", "place": "東展示棟 ガレリア（企画展示①）", "url": "https://www.jimtof.org/jp/evt_show.html" },
+    { "id": "t-1030-1130-iguchi", "date": "2026-10-30", "start": "11:30", "cat": "talk", "label": "トークショー", "title": "強い組織はこうして生まれる（日本代表監督に学ぶチームビルディング）", "speaker": "井口資仁 氏（野球日本代表監督）", "place": "南4ホール INSIGHTSステージ", "entry": "事前申込は終了（空席があれば当日聴講可）", "url": "https://www.jimtof.org/jp/evt.html" },
+    { "id": "t-1030-1300-stem", "date": "2026-10-30", "start": "13:00", "cat": "talk", "label": "講演", "title": "未来をつくるWomen in STEM", "speaker": "大塚聡子 氏（JAXA）ほか", "place": "南4ホール INSIGHTSステージ", "entry": "事前申込制（空席があれば当日聴講可）", "url": "https://www.jimtof.org/jp/evt.html" },
+    { "id": "t-1030-1400-kaleido", "date": "2026-10-30", "start": "14:00", "end": "15:00", "cat": "talk", "label": "企画展示 対談", "title": "Kaleido開発者と工作機械メーカーの対談", "speaker": "田中大亮 氏（ニデックマシンツール）ほか", "place": "東展示棟 ガレリア（企画展示①）", "url": "https://www.jimtof.org/jp/evt_show.html" },
+    { "id": "t-1030-1500-yobinori", "date": "2026-10-30", "start": "15:00", "cat": "talk", "label": "講演", "title": "あなたの話が伝わらない10の理由", "speaker": "ヨビノリたくみ 氏", "place": "南4ホール INSIGHTSステージ", "entry": "事前申込は終了（空席があれば当日聴講可）", "url": "https://www.jimtof.org/jp/evt.html" },
+    { "id": "a-1030-1500-3da", "date": "2026-10-30", "start": "15:00", "end": "16:00", "cat": "assoc", "label": "団体セミナー", "title": "3DAモデルが変えるものづくり", "speaker": "ものづくり標準データ推進協議会（ミツトヨ・オークマ・DMG森精機・ファナック・ヤマザキマザックほか）", "place": "会議棟1F 101会議室", "entry": "申込不要（名刺1枚を持参）", "url": "https://www.jimtof.org/jp/evt_others.html" },
+    { "id": "t-1031-1100-3da", "date": "2026-10-31", "start": "11:00", "cat": "talk", "label": "講演", "title": "自動車業界における3DAモデルを通したデジタル活用", "place": "南4ホール INSIGHTSステージ", "entry": "事前申込制（空席があれば当日聴講可）", "url": "https://www.jimtof.org/jp/evt.html" },
+    { "id": "t-1031-1300-nasu", "date": "2026-10-31", "start": "13:00", "cat": "talk", "label": "講演", "title": "未来を動かす機械ビジネスの醍醐味", "speaker": "那須直美 氏（インダストリー・ジャパン）", "place": "南4ホール INSIGHTSステージ", "entry": "事前申込制（空席があれば当日聴講可）", "url": "https://www.jimtof.org/jp/evt.html" },
+    { "id": "s-1031-1600-koryu", "date": "2026-10-31", "start": "16:00", "end": "18:00", "cat": "student", "label": "学生", "title": "出展メーカーと学生との交流会", "place": "会議棟1F レセプションホール", "entry": "学生限定・無料", "url": "https://www.jimtof.org/jp/evt_stu.html" },
+    { "id": "s-1101-0900-top", "date": "2026-11-01", "start": "09:00", "end": "12:40", "cat": "student", "label": "学生（会期翌日）", "title": "工作機械トップセミナー", "place": "会議棟7F 国際会議場", "entry": "会期翌日の開催。問い合わせ：日本工作機械工業会（03-3434-3961）", "url": "https://www.jimtof.org/jp/evt_stu.html" },
+
+    { "id": "ws-1026-1130", "date": "2026-10-26", "start": "11:30", "end": "12:30", "cat": "workshop", "label": "出展者WS", "title": "切削液に混ぜて環境対策！アルカリイオン水", "speaker": "クール・テック", "place": "南4ホール INSIGHTSステージ", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop_southHall.html" },
+    { "id": "ws-1026-1330", "date": "2026-10-26", "start": "13:30", "end": "14:30", "cat": "workshop", "label": "出展者WS", "title": "自動盤でここまでできる（複合加工・自動化の新提案）", "speaker": "シチズンマシナリー", "place": "南4ホール INSIGHTSステージ", "entry": "要申込（電話）", "url": "https://www.jimtof.org/jp/evt_wkshop_southHall.html" },
+    { "id": "ws-1026-1530", "date": "2026-10-26", "start": "15:30", "end": "16:30", "cat": "workshop", "label": "出展者WS", "title": "時間遅れの自励振動理論が拓く高精度穴加工", "speaker": "アヤボ", "place": "南4ホール INSIGHTSステージ", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop_southHall.html" },
+    { "id": "ws-1027-1130", "date": "2026-10-27", "start": "11:30", "end": "12:30", "cat": "workshop", "label": "出展者WS", "title": "試作から量産へ：産業用AM最前線", "speaker": "シーメンス", "place": "南4ホール INSIGHTSステージ", "entry": "申込方法は出展者へ", "url": "https://www.jimtof.org/jp/evt_wkshop_southHall.html" },
+    { "id": "ws-1028-1130", "date": "2026-10-28", "start": "11:30", "end": "12:30", "cat": "workshop", "label": "出展者WS", "title": "パス作成を50%短縮！加工ノウハウの標準化事例", "speaker": "セイロジャパン", "place": "南4ホール INSIGHTSステージ", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop_southHall.html" },
+    { "id": "ws-1028-1330", "date": "2026-10-28", "start": "13:30", "end": "14:30", "cat": "workshop", "label": "出展者WS", "title": "Vericut 9.7が拓く次世代デジタルツイン", "speaker": "CGTech", "place": "南4ホール INSIGHTSステージ", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop_southHall.html" },
+    { "id": "ws-1028-1530", "date": "2026-10-28", "start": "15:30", "end": "16:30", "cat": "workshop", "label": "出展者WS", "title": "肉盛り溶接現場の省人化（肉盛りくん・特盛りくん）", "speaker": "南海モルディ", "place": "南4ホール INSIGHTSステージ", "entry": "要申込（メール）", "url": "https://www.jimtof.org/jp/evt_wkshop_southHall.html" },
+    { "id": "ws-1029-1130", "date": "2026-10-29", "start": "11:30", "end": "12:30", "cat": "workshop", "label": "出展者WS", "title": "大量生産だけが、自動化ではない。", "speaker": "シュンク・ジャパン", "place": "南4ホール INSIGHTSステージ", "entry": "申込不要（直接会場へ）", "url": "https://www.jimtof.org/jp/evt_wkshop_southHall.html" },
+    { "id": "ws-1029-1330", "date": "2026-10-29", "start": "13:30", "end": "14:30", "cat": "workshop", "label": "出展者WS", "title": "「CAD/CAMは経営のツール」の実践セミナー", "speaker": "コダマコーポレーション", "place": "南4ホール INSIGHTSステージ", "entry": "要申込（電話・Web・メール）", "url": "https://www.jimtof.org/jp/evt_wkshop_southHall.html" },
+    { "id": "ws-1029-1530", "date": "2026-10-29", "start": "15:30", "end": "16:30", "cat": "workshop", "label": "出展者WS", "title": "ワイヤ・レーザ金属3Dプリンタ「AZシリーズ」", "speaker": "三菱電機", "place": "南4ホール INSIGHTSステージ", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop_southHall.html" },
+
+    { "id": "w-1027-1100-605", "date": "2026-10-27", "start": "11:00", "end": "12:00", "cat": "workshop", "label": "出展者WS", "title": "自動化が変える工具製造（WALTER ATP）", "speaker": "United Machining Solutions Management AG", "place": "会議棟6F 605会議室", "entry": "要申込（Web・メール）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1027-1100-606", "date": "2026-10-27", "start": "11:00", "end": "12:00", "cat": "workshop", "label": "出展者WS", "title": "自動工具研削用のデジタルプロセスチェーン", "speaker": "ISBE GmbH", "place": "会議棟6F 606会議室", "entry": "申込方法は出展者へ", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1027-1100-607", "date": "2026-10-27", "start": "11:00", "end": "12:00", "cat": "workshop", "label": "出展者WS", "title": "加工現場のデータ活用DX", "speaker": "ゴードーソリューション", "place": "会議棟6F 607会議室", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1027-1300-605", "date": "2026-10-27", "start": "13:00", "end": "14:00", "cat": "workshop", "label": "出展者WS", "title": "切削工具向けPVD・CVD最新コーティング技術（Hauzer・Bernex）", "speaker": "IHI", "place": "会議棟6F 605会議室", "entry": "要申込（メール）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1027-1300-606", "date": "2026-10-27", "start": "13:00", "end": "14:00", "cat": "workshop", "label": "出展者WS", "title": "歯車加工の工程短縮とトータルコスト削減", "speaker": "不二越", "place": "会議棟6F 606会議室", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1027-1300-607", "date": "2026-10-27", "start": "13:00", "end": "14:00", "cat": "workshop", "label": "出展者WS", "title": "PPWR規制への対応とPCR材のご提案", "speaker": "本多プラス", "place": "会議棟6F 607会議室", "entry": "要申込（メール）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1027-1300-608", "date": "2026-10-27", "start": "13:00", "end": "14:00", "cat": "workshop", "label": "出展者WS", "title": "低抵抗工具で穴加工と高速加工の常識を疑う", "speaker": "イワタツール", "place": "会議棟6F 608会議室", "entry": "要申込（Web・メール）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1027-1500-605", "date": "2026-10-27", "start": "15:00", "end": "16:00", "cat": "workshop", "label": "出展者WS", "title": "失敗しないモニタリングシステムの導入＆実践", "speaker": "マーポス", "place": "会議棟6F 605会議室", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1027-1500-606", "date": "2026-10-27", "start": "15:00", "end": "16:00", "cat": "workshop", "label": "出展者WS", "title": "AIでつなぐ加工ノウハウの継承と標準化", "speaker": "Hexagon Manufacturing Intelligence", "place": "会議棟6F 606会議室", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+
+    { "id": "w-1028-1100-605", "date": "2026-10-28", "start": "11:00", "end": "12:00", "cat": "workshop", "label": "出展者WS", "title": "レーザークラッド複合研削盤のご紹介", "speaker": "ジェイテクト", "place": "会議棟6F 605会議室", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1028-1100-606", "date": "2026-10-28", "start": "11:00", "end": "12:00", "cat": "workshop", "label": "出展者WS", "title": "3DAモデルを活用した製造デジタルスレッドの確立と運用", "speaker": "YKT", "place": "会議棟6F 606会議室", "entry": "要申込（メール）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1028-1100-607", "date": "2026-10-28", "start": "11:00", "end": "12:00", "cat": "workshop", "label": "出展者WS", "title": "未来志向の加工技術（デジタルツイン）", "speaker": "ModuleWorks GmbH", "place": "会議棟6F 607会議室", "entry": "要申込（Web・メール）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1028-1100-608", "date": "2026-10-28", "start": "11:00", "end": "12:00", "cat": "workshop", "label": "出展者WS", "title": "切削シミュレーション活用のための新アプローチ", "speaker": "Third Wave Systems Japan", "place": "会議棟6F 608会議室", "entry": "申込方法は出展者へ", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1028-1300-605", "date": "2026-10-28", "start": "13:00", "end": "14:00", "cat": "workshop", "label": "出展者WS", "title": "測定工具の社内校正とJCSS校正", "speaker": "ミツトヨ", "place": "会議棟6F 605会議室", "entry": "要申込（メール）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1028-1300-606", "date": "2026-10-28", "start": "13:00", "end": "14:00", "cat": "workshop", "label": "出展者WS", "title": "難削材のミリング・穴あけ・タップ加工向け高性能コーティング", "speaker": "エリコンジャパン", "place": "会議棟6F 606会議室", "entry": "申込方法は出展者へ", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1028-1300-607", "date": "2026-10-28", "start": "13:00", "end": "14:00", "cat": "workshop", "label": "出展者WS", "title": "英国LKメトロロジー社の最新技術", "speaker": "LKメトロロジー", "place": "会議棟6F 607会議室", "entry": "要申込（メール）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1028-1300-608", "date": "2026-10-28", "start": "13:00", "end": "14:00", "cat": "workshop", "label": "出展者WS", "title": "DXで現場の非効率を「時間価値」に変える（MISUMI floow）", "speaker": "ミスミ", "place": "会議棟6F 608会議室", "entry": "要申込（Web・メール）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1028-1500-605", "date": "2026-10-28", "start": "15:00", "end": "16:00", "cat": "workshop", "label": "出展者WS", "title": "段替えゼロ！ドイツ発・ワンチャッキング加工の新常識", "speaker": "HORN（登壇：IZUSHI）", "place": "会議棟6F 605会議室", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1028-1500-606", "date": "2026-10-28", "start": "15:00", "end": "16:00", "cat": "workshop", "label": "出展者WS", "title": "AIエージェントを活用したCAMプロセスの自律化へ", "speaker": "データ・デザイン", "place": "会議棟6F 606会議室", "entry": "要申込（電話・Web）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+
+    { "id": "w-1029-1100-605", "date": "2026-10-29", "start": "11:00", "end": "12:00", "cat": "workshop", "label": "出展者WS", "title": "未来の高周波誘導加熱", "speaker": "富士電子工業", "place": "会議棟6F 605会議室", "entry": "要申込（メール）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1029-1100-606", "date": "2026-10-29", "start": "11:00", "end": "12:00", "cat": "workshop", "label": "出展者WS", "title": "タップ加工は新基準へ", "speaker": "オーエスジー", "place": "会議棟6F 606会議室", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1029-1100-607", "date": "2026-10-29", "start": "11:00", "end": "12:00", "cat": "workshop", "label": "出展者WS", "title": "工具が「還る」時代へ（超硬資源の循環）", "speaker": "三菱マテリアル", "place": "会議棟6F 607会議室", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1029-1100-608", "date": "2026-10-29", "start": "11:00", "end": "12:00", "cat": "workshop", "label": "出展者WS", "title": "小径化×CBN化で実現する次世代切削戦略", "speaker": "日進工具", "place": "会議棟6F 608会議室", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1029-1300-605", "date": "2026-10-29", "start": "13:00", "end": "14:00", "cat": "workshop", "label": "出展者WS", "title": "誰もが高精度加工できる時代へ！", "speaker": "芝浦機械", "place": "会議棟6F 605会議室", "entry": "要申込（メール）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1029-1300-606", "date": "2026-10-29", "start": "13:00", "end": "14:00", "cat": "workshop", "label": "出展者WS", "title": "非接触三次元形状測定の自動化最前線", "speaker": "ユーロテクノ", "place": "会議棟6F 606会議室", "entry": "要申込（電話・Web・メール）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1029-1300-607", "date": "2026-10-29", "start": "13:00", "end": "14:00", "cat": "workshop", "label": "出展者WS", "title": "タングステン高騰に立ち向かう！刃先交換式工具でのコスト削減", "speaker": "ダイジェット工業", "place": "会議棟6F 607会議室", "entry": "要申込（Web・メール）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1029-1300-608", "date": "2026-10-29", "start": "13:00", "end": "14:00", "cat": "workshop", "label": "出展者WS", "title": "エアー消費量の削減と静音性を実現した次世代スピンドルユニット", "speaker": "日本エスケイエフ", "place": "会議棟6F 608会議室", "entry": "要申込（Web・メール）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1029-1500-605", "date": "2026-10-29", "start": "15:00", "end": "16:00", "cat": "workshop", "label": "出展者WS", "title": "最新エンドミル×加工技術の最前線", "speaker": "ユニオンツール", "place": "会議棟6F 605会議室", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1029-1500-606", "date": "2026-10-29", "start": "15:00", "end": "16:00", "cat": "workshop", "label": "出展者WS", "title": "HEIDENHAINの校正ソリューション", "speaker": "ハイデンハイン", "place": "会議棟6F 606会議室", "entry": "申込方法は出展者へ", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1029-1500-607", "date": "2026-10-29", "start": "15:00", "end": "16:00", "cat": "workshop", "label": "出展者WS", "title": "Autodesk AIと設計・製造の未来", "speaker": "オートデスク", "place": "会議棟6F 607会議室", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1029-1500-608", "date": "2026-10-29", "start": "15:00", "end": "16:00", "cat": "workshop", "label": "出展者WS", "title": "航空機エンジン部品加工用治具のご紹介", "speaker": "WILHELM KOENIG MTM GmbH", "place": "会議棟6F 608会議室", "entry": "要申込（メール）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+
+    { "id": "w-1030-1100-605", "date": "2026-10-30", "start": "11:00", "end": "12:00", "cat": "workshop", "label": "出展者WS", "title": "工作機械を安全に自律化するフィジカルAI CNC ほか", "speaker": "ファナック", "place": "会議棟6F 605会議室", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1030-1100-606", "date": "2026-10-30", "start": "11:00", "end": "12:00", "cat": "workshop", "label": "出展者WS", "title": "加工機とスケジューラが拓く放電加工の現場改革", "speaker": "三菱電機", "place": "会議棟6F 606会議室", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1030-1100-607", "date": "2026-10-30", "start": "11:00", "end": "12:00", "cat": "workshop", "label": "出展者WS", "title": "測定のスマートシフト（工具寿命の最適化と段取りの自動化）", "speaker": "ブルーム-ノボテスト", "place": "会議棟6F 607会議室", "entry": "要申込（電話・Web・メール）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1030-1100-608", "date": "2026-10-30", "start": "11:00", "end": "12:00", "cat": "workshop", "label": "出展者WS", "title": "TwinCAT CNCで実現する工作機械の機能開発", "speaker": "ベッコフオートメーション", "place": "会議棟6F 608会議室", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1030-1300-605", "date": "2026-10-30", "start": "13:00", "end": "14:00", "cat": "workshop", "label": "出展者WS", "title": "半導体製造装置部品への最新ソリューション", "speaker": "牧野フライス製作所", "place": "会議棟6F 605会議室", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1030-1300-606", "date": "2026-10-30", "start": "13:00", "end": "14:00", "cat": "workshop", "label": "出展者WS", "title": "装置性能を左右する「動剛性」の重要性", "speaker": "THK", "place": "会議棟6F 606会議室", "entry": "要申込（電話・Web・メール）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1030-1300-607", "date": "2026-10-30", "start": "13:00", "end": "14:00", "cat": "workshop", "label": "出展者WS", "title": "WE HAVE THE SOLUTION", "speaker": "日研工作所", "place": "会議棟6F 607会議室", "entry": "申込方法は出展者へ", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1030-1300-608", "date": "2026-10-30", "start": "13:00", "end": "14:00", "cat": "workshop", "label": "出展者WS", "title": "AI検査自動化とタグレス個体識別による次世代品質管理", "speaker": "米沢工機", "place": "会議棟6F 608会議室", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1030-1500-605", "date": "2026-10-30", "start": "15:00", "end": "16:00", "cat": "workshop", "label": "出展者WS", "title": "次世代PVD技術と難削材用コーティング", "speaker": "神戸製鋼所", "place": "会議棟6F 605会議室", "entry": "申込方法は出展者へ", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1030-1500-606", "date": "2026-10-30", "start": "15:00", "end": "16:00", "cat": "workshop", "label": "出展者WS", "title": "超硬合金代替材料や省資源に向けた開発製品", "speaker": "冨士ダイス", "place": "会議棟6F 606会議室", "entry": "要申込（メール）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1030-1500-607", "date": "2026-10-30", "start": "15:00", "end": "16:00", "cat": "workshop", "label": "出展者WS", "title": "品質は、データで進化する。", "speaker": "Hexagon Manufacturing Intelligence", "place": "会議棟6F 607会議室", "entry": "要申込（Web）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+    { "id": "w-1030-1500-608", "date": "2026-10-30", "start": "15:00", "end": "16:00", "cat": "workshop", "label": "出展者WS", "title": "精彫「機内計測・知能補正技術」の紹介", "speaker": "兼松ケージーケイ", "place": "会議棟6F 608会議室", "entry": "要申込（Web・メール）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" }
+  ],
+  "access": [
+    { "title": "ゆりかもめ「東京ビッグサイト駅」", "body": "徒歩約3分。新橋から23分、豊洲から9分" },
+    { "title": "りんかい線「国際展示場駅」", "body": "徒歩約7分。大崎から14分、新木場から5分" },
+    { "title": "BRT", "body": "新橋駅のりばから国際展示場駅まで約17分、そこから徒歩約7分" },
+    { "title": "都営バス", "body": "東京駅丸の内南口から都05-2系統で東京ビッグサイトまで約40分" },
+    { "title": "空港から", "body": "羽田空港からリムジンバスで約25分。成田空港からは有明パークビル（東京ベイ有明ワシントンホテル）まで約80分、そこから徒歩3分" },
+    { "title": "車・駐車場", "body": "周辺道路と駐車場は混雑が見込まれるため、公共交通機関の利用が呼びかけられています" },
+    { "title": "会場内の移動", "body": "無料の巡回シャトルバスとジャンボタクシーが運行します（ルート・時間は会場で確認）" },
+    { "title": "食事", "body": "東7ホール内・東展示棟屋外・西屋上展示場にケータリングカー（JIMTOF Food Festival）。平日は東展示棟ガレリア2F・レストラン街・南展示棟3Fでお弁当を販売" }
+  ],
+  "links": [
+    {
+      "group": "来場登録",
+      "items": [
+        { "title": "来場登録", "desc": "前売1,000円は10/25まで。Web登録は10/31 15:00まで", "url": "https://reg2026.jimtof.org/public?lang=ja" },
+        { "title": "来場者専用サイト（マイページ）", "desc": "来場者証の再印刷、講演・ワークショップの聴講申込", "url": "https://reg2026.jimtof.org/public/mypage?lang=ja" },
+        { "title": "入場方法", "desc": "入場料・招待券・学生の扱い", "url": "https://www.jimtof.org/jp/registration.html" },
+        { "title": "来場者FAQ", "desc": "来場者証、再入場、子ども連れなど", "url": "https://www.jimtof.org/jp/visitorFAQ.html" },
+        { "title": "チャットボット", "desc": "公式サイトの自動応答窓口", "url": "https://app.chatplus.jp/chat/visitor/979fb09f_1?t=btn" }
+      ]
+    },
+    {
+      "group": "出展者・会場図",
+      "items": [
+        { "title": "JIMTOF Guide & Map（日刊工業新聞）", "desc": "主催者オフィシャルメディア。ブースにピンを立てて自分専用マップを作れる", "url": "https://jimtof.nikkan.co.jp/" },
+        { "title": "出展者検索（五十音）", "desc": "公式オンラインカタログ", "url": "https://www.jimtof.org/jp/exhi_search_pronoun.html" },
+        { "title": "カテゴリー検索", "desc": "出展製品の分類から探す", "url": "https://www.jimtof.org/jp/exhi_search_cate.html" },
+        { "title": "小間割図検索", "desc": "ホールごとの小間割図（HTML・PDF）", "url": "https://www.jimtof.org/jp/exhi_search_booth.html" },
+        { "title": "会場全体図（PDF）", "desc": "東・西・南展示棟と会議棟の配置", "url": "https://www.jimtof.org/files/site_map_jp.pdf" },
+        { "title": "出展者オンラインチャンネル", "desc": "出展者の動画", "url": "https://www.jimtof.org/jp/channel.html" }
+      ]
+    },
+    {
+      "group": "講演・企画",
+      "items": [
+        { "title": "講演会・セミナー", "desc": "基調講演・特別講演・INSIGHTSステージ", "url": "https://www.jimtof.org/jp/evt.html" },
+        { "title": "企画展示・特別企画", "desc": "Kaleido、きさげ、AM ZONE", "url": "https://www.jimtof.org/jp/evt_show.html" },
+        { "title": "会議棟ワークショップ", "desc": "出展者ワークショップ（6F 605〜608）", "url": "https://www.jimtof.org/jp/evt_wkshop.html" },
+        { "title": "南展示棟ワークショップ", "desc": "INSIGHTSステージの出展者ワークショップ", "url": "https://www.jimtof.org/jp/evt_wkshop_southHall.html" },
+        { "title": "IMEC2026・関連団体イベント", "desc": "国際工作機械技術者会議ほか", "url": "https://www.jimtof.org/jp/evt_others.html" },
+        { "title": "学生応援プログラム", "desc": "交流会、トップセミナー、学生ブースツアー", "url": "https://www.jimtof.org/jp/evt_stu.html" }
+      ]
+    },
+    {
+      "group": "会場・アクセス",
+      "items": [
+        { "title": "東京ビッグサイト 交通アクセス", "desc": "電車・バス・空港からの行き方", "url": "https://www.bigsight.jp/visitor/access/" },
+        { "title": "交通・宿泊（JIMTOF公式）", "desc": "所要時間と宿泊案内", "url": "https://www.jimtof.org/jp/access.html" },
+        { "title": "食事（JIMTOF Food Festival）", "desc": "ケータリングカー、館内レストラン", "url": "https://www.jimtof.org/jp/dinning.html" }
+      ]
+    },
+    {
+      "group": "公式情報",
+      "items": [
+        { "title": "JIMTOF2026 公式サイト", "desc": "jimtof.org", "url": "https://www.jimtof.org/jp/" },
+        { "title": "公式X（@JIMTOF_official）", "desc": "最新のお知らせ", "url": "https://x.com/JIMTOF_official" },
+        { "title": "JIMTOF INSIGHTS", "desc": "公式YouTube企画", "url": "https://jimtof-insights.info/" }
+      ]
+    },
+    {
+      "group": "問い合わせ",
+      "items": [
+        { "title": "JIMTOF事務局（東京ビッグサイト）", "desc": "jimtof@tokyo-bigsight.co.jp", "url": "mailto:jimtof@tokyo-bigsight.co.jp" },
+        { "title": "来場者登録事務局（電話）", "desc": "03-4241-5209", "url": "tel:03-4241-5209" },
+        { "title": "来場者登録事務局（メール）", "desc": "jimtof2026_reg@shanon.co.jp", "url": "mailto:jimtof2026_reg@shanon.co.jp" },
+        { "title": "日本工作機械工業会", "desc": "IMEC・工作機械トップセミナー 03-3434-3961", "url": "tel:03-3434-3961" }
+      ]
+    }
+  ]
+}
