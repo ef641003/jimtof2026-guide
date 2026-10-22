@@ -147,7 +147,7 @@ fun ScheduleScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState) {
                 items(dates) { date ->
                     FilterChip(
                         selected = date == selectedDate,
-                        onClick = { vm.setScheduleDate(date) },
+                        onClick = { vm.pickScheduleDate(date) },
                         label = { Text(if (date == today) "今日 ${date.jpShort()}" else date.jpShort()) },
                     )
                 }

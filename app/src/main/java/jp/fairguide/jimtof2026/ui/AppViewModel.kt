@@ -58,7 +58,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         tab = target
     }
 
-    fun setScheduleDate(date: LocalDate) {
+    fun pickScheduleDate(date: LocalDate) {
         scheduleDate = date
     }
 
