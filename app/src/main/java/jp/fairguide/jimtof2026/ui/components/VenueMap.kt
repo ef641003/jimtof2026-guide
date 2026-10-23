@@ -42,8 +42,8 @@ data class MapZone(
 object VenueLayout {
     val zones: List<MapZone> = listOf(
         MapZone("CT", "ALL", 0.34f, 0.05f, 0.66f, 0.20f, "会議棟"),
-        MapZone("-rinkai", "ALL", 0.02f, 0.05f, 0.30f, 0.17f, "りんかい線\n国際展示場駅"),
-        MapZone("-yurikamome", "ALL", 0.70f, 0.05f, 0.98f, 0.17f, "ゆりかもめ\nビッグサイト駅"),
+        MapZone("-rinkai", "ALL", 0.01f, 0.03f, 0.32f, 0.20f, "りんかい線\n国際展示場駅"),
+        MapZone("-yurikamome", "ALL", 0.68f, 0.03f, 0.99f, 0.20f, "ゆりかもめ\nビッグサイト"),
         // 1F
         MapZone("W1-2", "1F", 0.04f, 0.26f, 0.34f, 0.60f, "西1・2\nアトリウム"),
         MapZone("E1-3", "1F", 0.52f, 0.26f, 0.96f, 0.40f, "東1〜3"),
