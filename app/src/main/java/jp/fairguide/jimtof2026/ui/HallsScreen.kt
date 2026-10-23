@@ -20,11 +20,12 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import jp.fairguide.jimtof2026.data.BoothItem
 import jp.fairguide.jimtof2026.data.FairData
 import jp.fairguide.jimtof2026.data.Hall
 import jp.fairguide.jimtof2026.logic.BoothCode
@@ -43,14 +45,31 @@ import jp.fairguide.jimtof2026.ui.components.BulletText
 import jp.fairguide.jimtof2026.ui.components.GuideCard
 import jp.fairguide.jimtof2026.ui.components.SectionCard
 import jp.fairguide.jimtof2026.ui.components.Tag
+import jp.fairguide.jimtof2026.ui.components.VenueLayout
+import jp.fairguide.jimtof2026.ui.components.VenueMap
 
 @Composable
-fun HallsScreen(data: FairData, onOpenUrl: (String) -> Unit) {
+fun HallsScreen(data: FairData, myList: List<BoothItem>, onOpenUrl: (String) -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
+    var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
+    var floor by rememberSaveable { mutableStateOf("1F") }
+    val counts = remember(myList, data) {
+        myList.mapNotNull { item ->
+            val loc = BoothCode.locate(item.booth) ?: return@mapNotNull null
+            data.halls.firstOrNull { loc.hallId in it.prefixes }?.id
+        }.groupingBy { it }.eachCount()
+    }
     val location = remember(query) { BoothCode.locate(query) }
     val matchedHall = remember(location, data) {
         location?.let { loc -> data.halls.firstOrNull { loc.hallId in it.prefixes } }
     }
+    LaunchedEffect(matchedHall) {
+        matchedHall?.let {
+            selectedId = it.id
+            floor = VenueLayout.floorOf(it.id)
+        }
+    }
+    val selectedHall = data.halls.firstOrNull { it.id == selectedId }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -104,8 +123,38 @@ fun HallsScreen(data: FairData, onOpenUrl: (String) -> Unit) {
                 }
             }
         }
-        items(data.halls, key = { it.id }) { hall ->
-            HallCard(hall = hall, highlighted = hall == matchedHall, onOpenUrl = onOpenUrl)
+        item {
+            SectionCard("会場マップ（略図）") {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("1F", "4F").forEach { f ->
+                        FilterChip(selected = floor == f, onClick = { floor = f }, label = { Text(f) })
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                VenueMap(
+                    floor = floor,
+                    selectedId = selectedId,
+                    counts = counts,
+                    onSelect = { id ->
+                        selectedId = id
+                        floor = if (id == "CT") floor else VenueLayout.floorOf(id)
+                    },
+                )
+                Text(
+                    text = "ホールをタップすると詳細が出ます。赤い数字はマイリストに入れたブースの数です。位置関係・形は目安で、実際とは異なります。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
+        }
+        selectedHall?.let { hall ->
+            item(key = "selected") {
+                HallCard(hall = hall, highlighted = true, onOpenUrl = onOpenUrl, count = counts[hall.id] ?: 0)
+            }
+        }
+        items(data.halls.filter { it.id != selectedId }, key = { it.id }) { hall ->
+            HallCard(hall = hall, highlighted = false, onOpenUrl = onOpenUrl, count = counts[hall.id] ?: 0)
         }
         item {
             SectionCard("ホールの見かた") {
@@ -117,7 +166,7 @@ fun HallsScreen(data: FairData, onOpenUrl: (String) -> Unit) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun HallCard(hall: Hall, highlighted: Boolean, onOpenUrl: (String) -> Unit) {
+private fun HallCard(hall: Hall, highlighted: Boolean, onOpenUrl: (String) -> Unit, count: Int) {
     val border = if (highlighted) {
         BorderStroke(2.dp, MaterialTheme.colorScheme.secondary)
     } else {
@@ -152,18 +201,16 @@ private fun HallCard(hall: Hall, highlighted: Boolean, onOpenUrl: (String) -> Un
             Spacer(Modifier.height(10.dp))
             hall.highlights.forEach { BulletText(it) }
         }
-        if (hall.mapUrl != null || hall.pdfUrl != null) {
-            Row(
-                modifier = Modifier.padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                hall.mapUrl?.let { url ->
-                    OutlinedButton(onClick = { onOpenUrl(url) }) { Text("小間割図を開く") }
-                }
-                hall.pdfUrl?.let { url ->
-                    TextButton(onClick = { onOpenUrl(url) }) { Text("PDF") }
-                }
-            }
+        if (count > 0) {
+            Text(
+                text = "マイリストのブース：${count}件",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 6.dp),
+            )
+        }
+        if (highlighted && hall.mapUrl != null) {
+            TextButton(onClick = { onOpenUrl(hall.mapUrl) }) { Text("ブース単位の詳細は公式の小間割図（外部サイト）") }
         }
     }
 }

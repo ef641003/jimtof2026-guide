@@ -104,7 +104,7 @@ fun GuideApp(vm: AppViewModel) {
                     onOpenSchedule = { vm.selectTab(AppTab.SCHEDULE) },
                     onOpenUrl = openUrl,
                 )
-                AppTab.HALLS -> HallsScreen(data = vm.data, onOpenUrl = openUrl)
+                AppTab.HALLS -> HallsScreen(data = vm.data, myList = vm.myList, onOpenUrl = openUrl)
                 AppTab.SCHEDULE -> ScheduleScreen(vm = vm, snackbarHostState = snackbarHostState)
                 AppTab.MY_LIST -> MyListScreen(vm = vm)
                 AppTab.LINKS -> LinksScreen(data = vm.data, onOpenUrl = openUrl)
