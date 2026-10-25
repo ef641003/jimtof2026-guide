@@ -16,18 +16,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -37,9 +39,9 @@ import androidx.compose.ui.text.font.FontWeight
 
 enum class AppTab(val key: String, val label: String, val title: String, val icon: ImageVector) {
     OVERVIEW("overview", "概要", "会期・入場", Icons.Filled.Home),
-    HALLS("halls", "ホール", "ホールと出展分野", Icons.Filled.Place),
+    VENUE("halls", "検索", "出展社をさがす・会場マップ", Icons.Filled.Search),
     SCHEDULE("schedule", "予定", "講演・ワークショップ", Icons.Filled.DateRange),
-    MY_LIST("mylist", "ブース", "回りたいブース（マイリスト）", Icons.Filled.Star),
+    MY_LIST("mylist", "ブース", "回りたいブース", Icons.Filled.Star),
     LINKS("links", "リンク", "アクセス・公式リンク", Icons.Filled.Info);
 
     companion object {
@@ -60,17 +62,21 @@ fun GuideApp(vm: AppViewModel) {
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                ),
                 title = {
                     Column {
                         Text(
-                            text = "JIMTOF2026 ガイド",
-                            style = MaterialTheme.typography.titleMedium,
+                            text = vm.tab.title,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            text = "非公式　${vm.tab.title}",
+                            text = "JIMTOF2026 非公式ガイド",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -79,13 +85,18 @@ fun GuideApp(vm: AppViewModel) {
             )
         },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
                 AppTab.entries.forEach { item ->
                     NavigationBarItem(
                         selected = vm.tab == item,
                         onClick = { vm.selectTab(item) },
                         icon = { Icon(item.icon, contentDescription = null) },
                         label = { Text(item.label, maxLines = 1) },
+                        colors = NavigationBarItemDefaults.colors(
+                            indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                            selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                        ),
                     )
                 }
             }
@@ -102,11 +113,12 @@ fun GuideApp(vm: AppViewModel) {
                     data = vm.data,
                     now = vm.now,
                     onOpenSchedule = { vm.selectTab(AppTab.SCHEDULE) },
+                    onOpenSearch = { vm.selectTab(AppTab.VENUE) },
                     onOpenUrl = openUrl,
                 )
-                AppTab.HALLS -> HallsScreen(data = vm.data, myList = vm.myList, onOpenUrl = openUrl)
+                AppTab.VENUE -> VenueScreen(vm = vm, snackbarHostState = snackbarHostState, onOpenUrl = openUrl)
                 AppTab.SCHEDULE -> ScheduleScreen(vm = vm, snackbarHostState = snackbarHostState)
-                AppTab.MY_LIST -> MyListScreen(vm = vm)
+                AppTab.MY_LIST -> MyListScreen(vm = vm, onOpenSearch = { vm.selectTab(AppTab.VENUE) })
                 AppTab.LINKS -> LinksScreen(data = vm.data, onOpenUrl = openUrl)
             }
         }

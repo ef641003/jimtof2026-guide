@@ -21,9 +21,11 @@ object BoothCode {
 
     private val EAST_OPEN = setOf(1, 2, 3, 7, 8) // 東4〜6ホールは改修工事で休館
     private val ATRIUM = Regex("^WA(\\d{0,3})$")
-    private val HALL = Regex("^([EWS])(\\d)(\\d{0,3})$")
 
-    /** 全角英数字・小文字・空白・ハイフンを吸収して「E1024」の形にそろえる */
+    /** 例：E1024、W3104、E1009-2（パビリオン内の小間は「-番号」がつく） */
+    private val HALL = Regex("^([EWS])(\\d)(\\d{0,3})(-\\d{1,2})?$")
+
+    /** 全角英数字・小文字・空白を吸収して「E1024」「E1009-2」の形にそろえる */
     fun normalize(input: String): String {
         val sb = StringBuilder()
         for (raw in input.trim()) {
@@ -31,11 +33,13 @@ object BoothCode {
                 in '０'..'９' -> '0' + (raw - '０')
                 in 'Ａ'..'Ｚ' -> 'A' + (raw - 'Ａ')
                 in 'ａ'..'ｚ' -> 'A' + (raw - 'ａ')
+                '－', 'ー', '−', '‐', '―' -> '-'
                 else -> raw.uppercaseChar()
             }
             if (ch in '0'..'9' || ch in 'A'..'Z') sb.append(ch)
+            if (ch == '-' && sb.isNotEmpty() && sb.last() != '-') sb.append('-')
         }
-        return sb.toString()
+        return sb.toString().trimEnd('-')
     }
 
     fun locate(input: String): BoothLocation? {

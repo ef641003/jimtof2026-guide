@@ -1,9 +1,9 @@
 package jp.fairguide.jimtof2026.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -20,6 +20,8 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.sp
+import jp.fairguide.jimtof2026.ui.theme.GuideTheme
+import jp.fairguide.jimtof2026.ui.theme.PlaceColor
 
 /** 略図上の1区画。座標は地図全体を 0〜1 に正規化した値 */
 data class MapZone(
@@ -71,8 +73,17 @@ fun VenueMap(
 ) {
     val measurer = rememberTextMeasurer()
     val scheme = MaterialTheme.colorScheme
+    val guide = GuideTheme.colors
     val active = VenueLayout.zones.filter { it.floor == floor || it.floor == "ALL" }
-    val ghosts = VenueLayout.zones.filter { it.floor != floor && it.floor != "ALL" && !(it.id == "-e46") }
+    val ghosts = VenueLayout.zones.filter { it.floor != floor && it.floor != "ALL" }
+
+    fun placeColor(id: String): PlaceColor = when {
+        id == "CT" -> guide.conference
+        id.startsWith("E") -> guide.east
+        id.startsWith("W") -> guide.west
+        id.startsWith("S") -> guide.south
+        else -> guide.neutral
+    }
 
     Canvas(
         modifier = modifier
@@ -101,6 +112,7 @@ fun VenueMap(
                 style = TextStyle(
                     color = textColor,
                     fontSize = 12.sp,
+                    lineHeight = 15.sp,
                     fontWeight = if (bold) FontWeight.Bold else FontWeight.Medium,
                     textAlign = TextAlign.Center,
                 ),
@@ -118,18 +130,20 @@ fun VenueMap(
 
         // 別の階にあるホールは薄く見せる（タップすると階が切り替わる）
         ghosts.forEach { z ->
-            drawZone(z, scheme.surfaceVariant.copy(alpha = 0.35f), scheme.outlineVariant, scheme.onSurfaceVariant.copy(alpha = 0.45f), 2f, false)
+            val c = placeColor(z.id)
+            drawZone(z, c.container.copy(alpha = 0.3f), c.strong.copy(alpha = 0.35f), scheme.onSurfaceVariant.copy(alpha = 0.5f), 2f, false)
         }
         active.forEach { z ->
+            val c = placeColor(z.id)
             when {
                 z.id.startsWith("-rin") || z.id.startsWith("-yuri") ->
-                    drawZone(z, scheme.tertiaryContainer, scheme.tertiary, scheme.onTertiaryContainer, 2f, false)
+                    drawZone(z, scheme.surfaceContainerHigh, scheme.outline, scheme.onSurfaceVariant, 2f, false)
                 !z.tappable ->
-                    drawZone(z, scheme.surfaceVariant.copy(alpha = 0.6f), scheme.outline, scheme.onSurfaceVariant, 2f, false)
+                    drawZone(z, scheme.surfaceContainer, scheme.outlineVariant, scheme.onSurfaceVariant, 2f, false)
                 z.id == selectedId ->
-                    drawZone(z, scheme.secondaryContainer, scheme.secondary, scheme.onSecondaryContainer, 6f, true)
+                    drawZone(z, c.container, c.strong, c.onContainer, 7f, true)
                 else ->
-                    drawZone(z, scheme.primaryContainer, scheme.primary, scheme.onPrimaryContainer, 2f, true)
+                    drawZone(z, c.container, c.strong.copy(alpha = 0.6f), c.onContainer, 2.5f, true)
             }
         }
         // マイリストの件数バッジ
@@ -138,10 +152,10 @@ fun VenueMap(
             if (n > 0 && z.tappable) {
                 val c = Offset(z.right * w - 6f, z.top * h + 6f)
                 val alpha = if (z.floor == floor || z.floor == "ALL") 1f else 0.5f
-                drawCircle(scheme.error.copy(alpha = alpha), radius = 22f, center = c)
+                drawCircle(scheme.secondary.copy(alpha = alpha), radius = 24f, center = c)
                 val t = measurer.measure(
                     text = n.toString(),
-                    style = TextStyle(color = scheme.onError, fontSize = 12.sp, fontWeight = FontWeight.Bold),
+                    style = TextStyle(color = scheme.onSecondary, fontSize = 12.sp, fontWeight = FontWeight.Bold),
                 )
                 drawText(t, topLeft = Offset(c.x - t.size.width / 2f, c.y - t.size.height / 2f))
             }

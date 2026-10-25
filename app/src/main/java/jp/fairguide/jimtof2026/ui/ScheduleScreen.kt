@@ -6,8 +6,10 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -21,21 +23,19 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,25 +46,29 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import jp.fairguide.jimtof2026.data.EventCategory
 import jp.fairguide.jimtof2026.data.FairEvent
 import jp.fairguide.jimtof2026.logic.FAIR_ZONE
 import jp.fairguide.jimtof2026.logic.hm
-import jp.fairguide.jimtof2026.logic.jpShort
-import jp.fairguide.jimtof2026.logic.timeRange
 import jp.fairguide.jimtof2026.notify.ReminderScheduler
 import jp.fairguide.jimtof2026.ui.components.BulletText
+import jp.fairguide.jimtof2026.ui.components.EmptyState
 import jp.fairguide.jimtof2026.ui.components.GuideCard
 import jp.fairguide.jimtof2026.ui.components.Tag
-import jp.fairguide.jimtof2026.ui.components.cardContainerColor
+import jp.fairguide.jimtof2026.ui.components.placeColorForPlaceName
+import jp.fairguide.jimtof2026.ui.theme.GuideTheme
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.TextStyle
+import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScheduleScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState) {
     val data = vm.data
@@ -73,6 +77,7 @@ fun ScheduleScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState) {
 
     val dates = remember(data) { data.events.map { it.date }.distinct().sorted() }
     val today = vm.now.withZoneSameInstant(FAIR_ZONE).toLocalDate()
+    val nowTime = vm.now.withZoneSameInstant(FAIR_ZONE).toLocalTime()
     val selectedDate = vm.scheduleDate?.takeIf { it in dates } ?: (if (today in dates) today else dates.first())
     var categoryKey by rememberSaveable { mutableStateOf<String?>(null) }
     var notesExpanded by rememberSaveable { mutableStateOf(false) }
@@ -139,23 +144,19 @@ fun ScheduleScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState) {
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 16.dp),
+        contentPadding = PaddingValues(bottom = 24.dp),
     ) {
-        item {
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(dates) { date ->
-                    FilterChip(
-                        selected = date == selectedDate,
-                        onClick = { vm.pickScheduleDate(date) },
-                        label = { Text(if (date == today) "今日 ${date.jpShort()}" else date.jpShort()) },
-                    )
-                }
-            }
+        item(key = "dates") {
+            DaySelector(
+                dates = dates,
+                selected = selectedDate,
+                today = today,
+                lastFairDay = data.days.last().date,
+                onSelect = vm::pickScheduleDate,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
         }
-        item {
+        item(key = "filters") {
             LazyRow(
                 contentPadding = PaddingValues(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -176,24 +177,25 @@ fun ScheduleScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState) {
                 }
             }
         }
-        item {
-            GuideCard(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+        item(key = "notes") {
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
                 if (selectedDate.isAfter(data.days.last().date)) {
                     Text(
                         text = "会期の翌日の予定です",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.padding(bottom = 4.dp),
                     )
                 }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { notesExpanded = !notesExpanded },
+                        .clickable { notesExpanded = !notesExpanded }
+                        .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = "ベルで開始${ReminderScheduler.LEAD_MINUTES}分前に通知。講演は事前申込制です",
+                        text = "ベルを押すと開始${ReminderScheduler.LEAD_MINUTES}分前に通知。講演は事前申込制です",
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -205,28 +207,29 @@ fun ScheduleScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState) {
                     )
                 }
                 if (notesExpanded) {
-                    Spacer(Modifier.height(6.dp))
-                    data.scheduleNotes.forEach { BulletText(it) }
+                    GuideCard(Modifier.padding(top = 4.dp)) {
+                        data.scheduleNotes.forEach { BulletText(it) }
+                    }
                 }
             }
         }
         if (events.isEmpty()) {
-            item {
-                Text(
-                    text = "この日の該当する予定はありません",
-                    modifier = Modifier.padding(24.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            item(key = "empty") {
+                EmptyState("この日の予定はありません", "別の日か、ほかの種類を選んでください")
             }
         }
         items(events, key = { it.id }) { event ->
             val startAt = event.startDateTime()
             val upcoming = startAt != null && startAt.isAfter(vm.now)
+            val isToday = selectedDate == today
+            val ended = isToday && event.start != null && (event.end ?: event.start.plusMinutes(60)).isBefore(nowTime)
+            val ongoing = isToday && event.start != null && !ended && !event.start.isAfter(nowTime)
             EventCard(
                 event = event,
                 reminderOn = event.id in vm.reminders,
                 canRemind = upcoming,
+                ended = ended,
+                ongoing = ongoing,
                 onBell = { onBell(event) },
                 onOpen = { event.url?.let { openLink(context, it) } },
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 5.dp),
@@ -235,41 +238,117 @@ fun ScheduleScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** 会期の各日を1列に並べる。日付の数字を大きく、曜日を添える */
+@Composable
+private fun DaySelector(
+    dates: List<LocalDate>,
+    selected: LocalDate,
+    today: LocalDate,
+    lastFairDay: LocalDate,
+    onSelect: (LocalDate) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        dates.forEach { date ->
+            val isSelected = date == selected
+            val isToday = date == today
+            val outside = date.isAfter(lastFairDay)
+            val container = when {
+                isSelected -> MaterialTheme.colorScheme.secondaryContainer
+                else -> GuideTheme.colors.card
+            }
+            val content = when {
+                isSelected -> MaterialTheme.colorScheme.onSecondaryContainer
+                outside -> MaterialTheme.colorScheme.onSurfaceVariant
+                else -> MaterialTheme.colorScheme.onSurface
+            }
+            Surface(
+                onClick = { onSelect(date) },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(60.dp),
+                color = container,
+                contentColor = content,
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(
+                    if (isToday) 2.dp else 1.dp,
+                    if (isToday) MaterialTheme.colorScheme.secondary else GuideTheme.colors.cardBorder,
+                ),
+            ) {
+                Column(
+                    Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Text(
+                        text = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.JAPANESE),
+                        style = MaterialTheme.typography.labelSmall,
+                        textAlign = TextAlign.Center,
+                    )
+                    Text(
+                        text = "${date.monthValue}/${date.dayOfMonth}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                    )
+                    if (isToday) {
+                        Text(
+                            text = "今日",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.secondary,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun EventCard(
     event: FairEvent,
     reminderOn: Boolean,
     canRemind: Boolean,
+    ended: Boolean,
+    ongoing: Boolean,
     onBell: () -> Unit,
     onOpen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val (tagContainer, tagContent) = categoryColors(event.category)
-    Card(
+    val place = placeColorForPlaceName(event.place)
+    GuideCard(
+        modifier = modifier.alpha(if (ended) 0.55f else 1f),
         onClick = onOpen,
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = cardContainerColor()),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        accent = place.strong,
+        contentPadding = PaddingValues(start = 12.dp, top = 12.dp, bottom = 12.dp, end = 4.dp),
     ) {
-        Row(Modifier.padding(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 4.dp)) {
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = event.timeRange(),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Tag(event.label, tagContainer, tagContent)
-                }
-                Spacer(Modifier.height(4.dp))
+        Row {
+            // 時刻の列：縦にそろえて、上から下へ流し読みできるようにする
+            Column(Modifier.width(64.dp)) {
                 Text(
-                    text = event.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
+                    text = event.start?.hm() ?: "未定",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
                 )
+                event.end?.let {
+                    Text(
+                        text = "〜${it.hm()}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (ongoing) {
+                    Tag("開催中", GuideTheme.colors.good, modifier = Modifier.padding(top = 4.dp), bold = true)
+                } else if (ended) {
+                    Text("終了", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            Column(Modifier.weight(1f)) {
+                Tag(event.label, tagContainer, tagContent)
+                Spacer(Modifier.height(4.dp))
+                Text(text = event.title, style = MaterialTheme.typography.titleSmall)
                 if (event.speaker.isNotBlank()) {
                     Text(
                         text = event.speaker,
@@ -281,13 +360,12 @@ private fun EventCard(
                     modifier = Modifier.padding(top = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.LocationOn,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    Box(
+                        Modifier
+                            .size(8.dp)
+                            .background(place.strong, CircleShape),
                     )
-                    Spacer(Modifier.width(2.dp))
+                    Spacer(Modifier.width(6.dp))
                     Text(
                         text = event.place,
                         style = MaterialTheme.typography.bodySmall,
@@ -304,11 +382,11 @@ private fun EventCard(
                 }
             }
             if (event.start != null) {
-                IconButton(onClick = onBell, enabled = canRemind || reminderOn) {
+                IconButton(onClick = onBell, enabled = canRemind || reminderOn, modifier = Modifier.size(48.dp)) {
                     Icon(
                         imageVector = if (reminderOn) Icons.Filled.Notifications else Icons.Outlined.Notifications,
                         contentDescription = if (reminderOn) "通知を解除" else "開始15分前に通知",
-                        tint = if (reminderOn) MaterialTheme.colorScheme.secondary else LocalContentColor.current,
+                        tint = if (reminderOn) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -323,6 +401,6 @@ private fun categoryColors(category: EventCategory): Pair<Color, Color> {
         EventCategory.TALK -> cs.primaryContainer to cs.onPrimaryContainer
         EventCategory.WORKSHOP -> cs.secondaryContainer to cs.onSecondaryContainer
         EventCategory.ASSOCIATION -> cs.tertiaryContainer to cs.onTertiaryContainer
-        EventCategory.STUDENT -> cs.surfaceVariant to cs.onSurfaceVariant
+        EventCategory.STUDENT -> cs.surfaceContainerHigh to cs.onSurface
     }
 }

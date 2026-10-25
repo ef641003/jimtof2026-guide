@@ -25,7 +25,15 @@ swipe_up
 shot 03-overview-bottom 2
 
 adb shell am start -W -n $ACT --es open_tab halls
-shot 04-halls 3
+shot 04-halls 4
+swipe_up
+shot 04b-halls-scrolled 2
+adb shell am start -W -n $ACT --es search_query mazak
+shot 04c-search-mazak 4
+adb shell am start -W -n $ACT --es search_query E2019
+shot 04d-search-booth 3
+adb shell am start -W -n $ACT --es search_query okuma
+shot 04e-search-okuma 3
 adb shell am start -W -n $ACT --es open_tab schedule --es event_date 2026-10-27
 shot 05-schedule-1027 3
 swipe_up

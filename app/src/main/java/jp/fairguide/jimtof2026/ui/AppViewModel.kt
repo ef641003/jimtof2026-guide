@@ -7,16 +7,23 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import jp.fairguide.jimtof2026.data.BoothItem
+import jp.fairguide.jimtof2026.data.Exhibitor
+import jp.fairguide.jimtof2026.data.ExhibitorRepository
 import jp.fairguide.jimtof2026.data.FairData
 import jp.fairguide.jimtof2026.data.FairEvent
 import jp.fairguide.jimtof2026.data.FairRepository
 import jp.fairguide.jimtof2026.data.MyListStore
 import jp.fairguide.jimtof2026.data.ReminderStore
+import jp.fairguide.jimtof2026.logic.ExhibitorHit
+import jp.fairguide.jimtof2026.logic.ExhibitorIndex
 import jp.fairguide.jimtof2026.logic.FAIR_ZONE
 import jp.fairguide.jimtof2026.notify.ReminderScheduler
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.ZonedDateTime
 
@@ -44,6 +51,25 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     var reminders by mutableStateOf(reminderStore.load())
         private set
 
+    // ---- 出展社検索 ----
+
+    /** 出展社データ（1,100社あまり）は最初に検索タブを開いたときに裏で読む */
+    var exhibitorIndex by mutableStateOf<ExhibitorIndex?>(null)
+        private set
+
+    var searchQuery by mutableStateOf("")
+        private set
+
+    var searchHits by mutableStateOf<List<ExhibitorHit>>(emptyList())
+        private set
+
+    /** 検索結果から「地図で見る」を押したホール（会場タブで強調する） */
+    var focusHallId by mutableStateOf<String?>(null)
+        private set
+
+    private var searchJob: Job? = null
+    private var loadingIndex = false
+
     init {
         // 「開幕まであと◯日」「閉場まであと◯分」を更新し続ける
         viewModelScope.launch {
@@ -56,7 +82,68 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun selectTab(target: AppTab) {
         tab = target
+        if (target == AppTab.VENUE) ensureExhibitors()
     }
+
+    fun ensureExhibitors() {
+        if (exhibitorIndex != null || loadingIndex) return
+        loadingIndex = true
+        viewModelScope.launch {
+            val index = withContext(Dispatchers.Default) { ExhibitorIndex(ExhibitorRepository.get(app)) }
+            exhibitorIndex = index
+            loadingIndex = false
+            if (searchQuery.isNotBlank()) runSearch(searchQuery)
+        }
+    }
+
+    fun updateSearch(query: String) {
+        searchQuery = query
+        ensureExhibitors()
+        searchJob?.cancel()
+        if (query.isBlank()) {
+            searchHits = emptyList()
+            return
+        }
+        searchJob = viewModelScope.launch {
+            delay(120) // 入力が落ち着くまで少し待つ
+            runSearch(query)
+        }
+    }
+
+    private suspend fun runSearch(query: String) {
+        val index = exhibitorIndex ?: return
+        val hits = withContext(Dispatchers.Default) { index.search(query) }
+        if (query == searchQuery) searchHits = hits
+    }
+
+    fun clearSearch() = updateSearch("")
+
+    fun focusHall(hallId: String?) {
+        focusHallId = hallId
+    }
+
+    /** 検索結果をマイリストに入れる。同じ会社・小間がすでにあれば追加しない */
+    fun addExhibitorToMyList(exhibitor: Exhibitor, booth: String): Boolean {
+        val exists = myList.any { it.company == exhibitor.name && it.booth.equals(booth, ignoreCase = true) }
+        if (exists) return false
+        val now = System.currentTimeMillis()
+        saveItem(
+            BoothItem(
+                id = now,
+                company = exhibitor.name,
+                booth = booth,
+                memo = "",
+                visited = false,
+                createdAt = now,
+            ),
+        )
+        return true
+    }
+
+    fun isInMyList(exhibitor: Exhibitor, booth: String): Boolean =
+        myList.any { it.company == exhibitor.name && it.booth.equals(booth, ignoreCase = true) }
+
+    // ---- 予定 ----
 
     fun pickScheduleDate(date: LocalDate) {
         scheduleDate = date
@@ -72,6 +159,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         ReminderScheduler.rescheduleAll(app)
         reminders = reminderStore.load()
     }
+
+    // ---- マイリスト ----
 
     fun saveItem(item: BoothItem) {
         val list = myList.toMutableList()
@@ -90,6 +179,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         myList = myList.map { if (it.id == id) it.copy(visited = !it.visited) else it }
         listStore.save(myList)
     }
+
+    // ---- 通知 ----
 
     fun enableReminder(event: FairEvent): ReminderScheduler.Result {
         val result = ReminderScheduler.schedule(app, event)

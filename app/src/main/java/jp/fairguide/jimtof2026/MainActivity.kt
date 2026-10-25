@@ -43,10 +43,15 @@ class MainActivity : ComponentActivity() {
     private fun handleIntent(intent: Intent?) {
         AppTab.fromKey(intent?.getStringExtra(EXTRA_OPEN_TAB))?.let { viewModel.selectTab(it) }
         intent?.getStringExtra(EXTRA_EVENT_DATE)?.let { viewModel.selectScheduleDate(it) }
+        intent?.getStringExtra(EXTRA_SEARCH)?.let {
+            viewModel.selectTab(AppTab.VENUE)
+            viewModel.updateSearch(it)
+        }
     }
 
     companion object {
         const val EXTRA_OPEN_TAB = "open_tab"
         const val EXTRA_EVENT_DATE = "event_date"
+        const val EXTRA_SEARCH = "search_query"
     }
 }

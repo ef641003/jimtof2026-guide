@@ -3,6 +3,7 @@ package jp.fairguide.jimtof2026.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -14,17 +15,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -49,8 +53,12 @@ import jp.fairguide.jimtof2026.logic.jpShort
 import jp.fairguide.jimtof2026.logic.previewEvents
 import jp.fairguide.jimtof2026.logic.timeRange
 import jp.fairguide.jimtof2026.ui.components.BulletText
+import jp.fairguide.jimtof2026.ui.components.Caption
+import jp.fairguide.jimtof2026.ui.components.GuideCard
 import jp.fairguide.jimtof2026.ui.components.LabeledRow
-import jp.fairguide.jimtof2026.ui.components.SectionCard
+import jp.fairguide.jimtof2026.ui.components.SectionHeader
+import jp.fairguide.jimtof2026.ui.components.placeColorForPlaceName
+import jp.fairguide.jimtof2026.ui.theme.GuideTheme
 import java.time.LocalDate
 import java.time.ZonedDateTime
 
@@ -59,6 +67,7 @@ fun OverviewScreen(
     data: FairData,
     now: ZonedDateTime,
     onOpenSchedule: () -> Unit,
+    onOpenSearch: () -> Unit,
     onOpenUrl: (String) -> Unit,
 ) {
     val status = remember(now, data) { fairStatus(data.days, now) }
@@ -68,10 +77,11 @@ fun OverviewScreen(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item { HeroCard(data.info, status, data.days.size) }
+        item { QuickActions(onOpenSearch, onOpenSchedule) }
         if (notices.isNotEmpty()) {
             item { NoticeCard(notices) }
         }
@@ -80,15 +90,6 @@ fun OverviewScreen(
         }
         item { DaysCard(data.days, today) }
         item {
-            SectionCard("開催データ") {
-                LabeledRow("会場", "${data.info.venue}（${data.info.address}）")
-                LabeledRow("ホール", data.info.halls)
-                LabeledRow("展示面積", data.info.area)
-                LabeledRow("出展規模", data.info.scale)
-                LabeledRow("主催", data.info.organizers)
-            }
-        }
-        item {
             AdmissionCard(
                 items = data.admission,
                 onRegister = { onOpenUrl(data.info.registrationUrl) },
@@ -96,86 +97,141 @@ fun OverviewScreen(
             )
         }
         item {
-            SectionCard("来場者証と入場") {
-                data.visitorNotes.forEach { BulletText(it) }
+            SectionHeader("来場者証と入場")
+            GuideCard { data.visitorNotes.forEach { BulletText(it) } }
+        }
+        item {
+            SectionHeader("開催データ")
+            GuideCard {
+                LabeledRow("会場", "${data.info.venue}（${data.info.address}）")
+                LabeledRow("ホール", data.info.halls)
+                LabeledRow("展示面積", data.info.area)
+                LabeledRow("出展規模", data.info.scale)
+                LabeledRow("主催", data.info.organizers)
             }
         }
         item { AboutText(data.info) }
     }
 }
 
+/** いちばん上：いま何をすべきかが一目でわかる状態表示 */
 @Composable
 private fun HeroCard(info: FairInfo, status: FairStatus, totalDays: Int) {
     val dark = isSystemInDarkTheme()
     val container = if (dark) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.primary
     val content = if (dark) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onPrimary
-    val (headline, detail) = statusTexts(status, totalDays)
+    val texts = statusTexts(status, totalDays)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = container, contentColor = content),
+        shape = MaterialTheme.shapes.large,
     ) {
-        Column(Modifier.padding(20.dp)) {
-            Text(
-                text = info.title,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Black,
-            )
-            Text(text = info.nameJa, style = MaterialTheme.typography.bodyMedium)
-            Spacer(Modifier.height(4.dp))
-            Text(text = "${info.period}・${info.venue}", style = MaterialTheme.typography.bodySmall)
-            Spacer(Modifier.height(16.dp))
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = content.copy(alpha = 0.12f),
-                contentColor = content,
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Column(Modifier.padding(14.dp)) {
-                    Text(text = headline, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(2.dp))
-                    Text(text = detail, style = MaterialTheme.typography.bodyMedium)
-                }
+        Column(Modifier.padding(horizontal = 20.dp, vertical = 18.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                StatusDot(status, content)
+                Spacer(Modifier.width(8.dp))
+                Text(text = texts.kicker, style = MaterialTheme.typography.labelLarge, color = content.copy(alpha = 0.9f))
             }
+            Spacer(Modifier.height(4.dp))
+            Text(text = texts.headline, style = MaterialTheme.typography.headlineMedium)
+            Text(text = texts.detail, style = MaterialTheme.typography.bodyLarge, color = content.copy(alpha = 0.92f))
+            Spacer(Modifier.height(14.dp))
+            HorizontalDivider(color = content.copy(alpha = 0.25f))
+            Spacer(Modifier.height(10.dp))
+            Text(text = "${info.title}　${info.nameJa}", style = MaterialTheme.typography.titleSmall)
+            Text(
+                text = "${info.period}・${info.venue}",
+                style = MaterialTheme.typography.bodySmall,
+                color = content.copy(alpha = 0.85f),
+            )
         }
     }
 }
 
-private fun statusTexts(status: FairStatus, totalDays: Int): Pair<String, String> = when (status) {
-    is FairStatus.Before -> Pair(
-        if (status.daysLeft <= 1L) "開幕は明日です" else "開幕まであと${status.daysLeft}日",
+@Composable
+private fun StatusDot(status: FairStatus, fallback: Color) {
+    val color = when (status) {
+        is FairStatus.Open -> GuideTheme.colors.good.strong
+        is FairStatus.BeforeOpen, is FairStatus.Before -> GuideTheme.colors.warn.strong
+        else -> fallback.copy(alpha = 0.6f)
+    }
+    Box(
+        Modifier
+            .size(10.dp)
+            .background(color, CircleShape),
+    )
+}
+
+private class StatusTexts(val kicker: String, val headline: String, val detail: String)
+
+private fun statusTexts(status: FairStatus, totalDays: Int): StatusTexts = when (status) {
+    is FairStatus.Before -> StatusTexts(
+        "開幕前",
+        if (status.daysLeft <= 1L) "開幕は明日" else "開幕まであと${status.daysLeft}日",
         "初日 ${status.firstDay.date.jpShort()} ${status.firstDay.open.hm()} 開場",
     )
-    is FairStatus.BeforeOpen -> Pair(
+    is FairStatus.BeforeOpen -> StatusTexts(
         "本日 ${status.dayIndex}日目（全${totalDays}日）",
-        "${status.day.open.hm()} 開場まであと${formatDuration(status.minutesToOpen)}",
+        "開場まであと${formatDuration(status.minutesToOpen)}",
+        "${status.day.open.hm()} 開場・${status.day.close.hm()} 閉場",
     )
-    is FairStatus.Open -> Pair(
+    is FairStatus.Open -> StatusTexts(
         "開催中・${status.dayIndex}日目（全${totalDays}日）",
-        (if (status.isLastDay) "最終日は" else "本日は") +
-            "${status.day.close.hm()}まで（あと${formatDuration(status.minutesToClose)}）",
+        "閉場まであと${formatDuration(status.minutesToClose)}",
+        (if (status.isLastDay) "最終日は" else "本日は") + "${status.day.close.hm()}まで",
     )
-    is FairStatus.ClosedForDay -> Pair(
+    is FairStatus.ClosedForDay -> StatusTexts(
+        "本日 ${status.dayIndex}日目は終了",
         "本日の展示は終了しました",
         "次は ${status.next.date.jpShort()} ${status.next.open.hm()} 開場",
     )
-    FairStatus.Ended -> Pair("JIMTOF2026 は終了しました", "ご来場おつかれさまでした")
+    FairStatus.Ended -> StatusTexts("会期終了", "JIMTOF2026 は終了しました", "ご来場おつかれさまでした")
+}
+
+/** よく使う2つの操作を、親指の届くところに大きく置く */
+@Composable
+private fun QuickActions(onOpenSearch: () -> Unit, onOpenSchedule: () -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Button(
+            onClick = onOpenSearch,
+            modifier = Modifier
+                .weight(1f)
+                .height(52.dp),
+            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary,
+            ),
+        ) {
+            Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("出展社をさがす", style = MaterialTheme.typography.titleSmall)
+        }
+        FilledTonalButton(
+            onClick = onOpenSchedule,
+            modifier = Modifier
+                .weight(1f)
+                .height(52.dp),
+        ) {
+            Icon(Icons.Filled.DateRange, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("きょうの予定", style = MaterialTheme.typography.titleSmall)
+        }
+    }
 }
 
 @Composable
 private fun NoticeCard(notices: List<Notice>) {
+    val c = GuideTheme.colors.warn
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-        ),
+        colors = CardDefaults.cardColors(containerColor = c.container, contentColor = c.onContainer),
     ) {
         Column(Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.Warning, contentDescription = null, modifier = Modifier.size(18.dp))
+                Icon(Icons.Filled.Warning, contentDescription = null, modifier = Modifier.size(18.dp), tint = c.strong)
                 Spacer(Modifier.width(6.dp))
-                Text("お知らせ", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text("お知らせ", style = MaterialTheme.typography.titleSmall)
             }
             Spacer(Modifier.height(6.dp))
             notices.forEach { BulletText(it.text) }
@@ -185,38 +241,45 @@ private fun NoticeCard(notices: List<Notice>) {
 
 @Composable
 private fun PreviewCard(preview: EventPreview, onMore: () -> Unit) {
-    SectionCard(preview.heading) {
-        preview.events.forEachIndexed { index, event ->
-            if (index > 0) {
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant,
-                )
-            }
-            Row {
-                Text(
-                    text = event.timeRange(),
-                    modifier = Modifier.width(96.dp),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        text = event.title,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = event.place,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    Column {
+        SectionHeader(preview.heading)
+        GuideCard {
+            preview.events.forEachIndexed { index, event ->
+                if (index > 0) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 10.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant,
                     )
                 }
+                val place = placeColorForPlaceName(event.place)
+                Row {
+                    Text(
+                        text = event.timeRange(),
+                        modifier = Modifier.width(100.dp),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Column(Modifier.weight(1f)) {
+                        Text(text = event.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                            Box(
+                                Modifier
+                                    .size(8.dp)
+                                    .background(place.strong, CircleShape),
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = event.place,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
             }
-        }
-        TextButton(onClick = onMore, modifier = Modifier.align(Alignment.End)) {
-            Text("予定をすべて見る")
+            TextButton(onClick = onMore, modifier = Modifier.align(Alignment.End)) {
+                Text("予定をすべて見る")
+            }
         }
     }
 }
@@ -224,93 +287,95 @@ private fun PreviewCard(preview: EventPreview, onMore: () -> Unit) {
 @Composable
 private fun DaysCard(days: List<FairDay>, today: LocalDate) {
     val lastDay = days.last()
-    SectionCard("会期と開場時間") {
-        days.forEachIndexed { index, day ->
-            val isToday = day.date == today
-            val shortDay = day.close != days.first().close
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        color = if (isToday) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-                        shape = RoundedCornerShape(8.dp),
+    Column {
+        SectionHeader("会期と開場時間")
+        GuideCard(contentPadding = PaddingValues(horizontal = 8.dp, vertical = 10.dp)) {
+            days.forEachIndexed { index, day ->
+                val isToday = day.date == today
+                val shortDay = day.close != days.first().close
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            color = if (isToday) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
+                            shape = RoundedCornerShape(8.dp),
+                        )
+                        .padding(horizontal = 10.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = if (isToday) "今日" else "${index + 1}日目",
+                        modifier = Modifier.width(52.dp),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (isToday) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
                     )
-                    .padding(horizontal = 8.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = if (isToday) "今日" else "${index + 1}日目",
-                    modifier = Modifier.width(44.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                )
-                Text(
-                    text = day.date.jpShort(),
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-                    maxLines = 1,
-                )
-                Text(
-                    text = "${day.open.hm()}〜${day.close.hm()}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = if (shortDay) FontWeight.Bold else FontWeight.Normal,
-                    color = if (shortDay) MaterialTheme.colorScheme.secondary else Color.Unspecified,
-                    maxLines = 1,
-                )
+                    Text(
+                        text = day.date.jpShort(),
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                        maxLines = 1,
+                    )
+                    Text(
+                        text = "${day.open.hm()}〜${day.close.hm()}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = if (shortDay || isToday) FontWeight.Bold else FontWeight.Normal,
+                        color = if (shortDay) MaterialTheme.colorScheme.secondary else Color.Unspecified,
+                        maxLines = 1,
+                    )
+                }
             }
+            Text(
+                text = "最終日（${lastDay.date.jpShort()}）は${lastDay.close.hm()}で終了します",
+                modifier = Modifier.padding(start = 10.dp, top = 6.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary,
+            )
         }
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = "最終日（${lastDay.date.jpShort()}）は${lastDay.close.hm()}で終了します",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.secondary,
-        )
     }
 }
 
 @Composable
 private fun AdmissionCard(items: List<Admission>, onRegister: () -> Unit, onMyPage: () -> Unit) {
-    SectionCard("入場料（税込）") {
-        items.forEachIndexed { index, item ->
-            if (index > 0) {
-                HorizontalDivider(
-                    modifier = Modifier.padding(vertical = 6.dp),
-                    color = MaterialTheme.colorScheme.outlineVariant,
-                )
-            }
-            Row(verticalAlignment = Alignment.Top) {
-                Column(Modifier.weight(1f)) {
-                    Text(item.label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                    if (item.note.isNotBlank()) {
-                        Text(
-                            text = item.note,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+    Column {
+        SectionHeader("入場料（税込）")
+        GuideCard {
+            items.forEachIndexed { index, item ->
+                if (index > 0) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant,
+                    )
                 }
-                Spacer(Modifier.width(8.dp))
-                Text(item.price, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Row(verticalAlignment = Alignment.Top) {
+                    Column(Modifier.weight(1f)) {
+                        Text(item.label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                        if (item.note.isNotBlank()) {
+                            Text(
+                                text = item.note,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Text(item.price, style = MaterialTheme.typography.titleMedium)
+                }
             }
-        }
-        Spacer(Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = onRegister, modifier = Modifier.weight(1f)) { Text("来場登録") }
-            OutlinedButton(onClick = onMyPage, modifier = Modifier.weight(1f)) { Text("マイページ") }
+            Spacer(Modifier.height(14.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = onRegister, modifier = Modifier.weight(1f).height(48.dp)) { Text("来場登録") }
+                OutlinedButton(onClick = onMyPage, modifier = Modifier.weight(1f).height(48.dp)) { Text("マイページ") }
+            }
         }
     }
 }
 
 @Composable
 private fun AboutText(info: FairInfo) {
-    Text(
-        text = "このアプリは主催者とは関係のない非公式ガイドです。情報は${info.verifiedOn}時点の" +
+    Caption(
+        "このアプリは主催者とは関係のない非公式ガイドです。情報は${info.verifiedOn}時点の" +
             "${info.sourceNote}。講演や会場の情報は変更されることがあるため、最新情報は公式サイトで確認してください。",
-        modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
