@@ -34,6 +34,16 @@ adb shell am start -W -n $ACT --es search_query E2019
 shot 04d-search-booth 3
 adb shell am start -W -n $ACT --es search_query okuma
 shot 04e-search-okuma 3
+adb shell am start -W -n $ACT --es novelty_only 1
+shot 04f-novelty-only 4
+swipe_up
+shot 04g-novelty-only-scrolled 2
+adb shell am start -W -n $ACT --es report_preset COMPETITOR
+shot 04h-preset-competitor 4
+adb shell am start -W -n $ACT --es report_preset AUTOMATION
+shot 04i-preset-automation 4
+adb shell am start -W -n $ACT --es report_preset GRINDING
+shot 04j-preset-grinding 4
 adb shell am start -W -n $ACT --es open_tab schedule --es event_date 2026-10-27
 shot 05-schedule-1027 3
 swipe_up

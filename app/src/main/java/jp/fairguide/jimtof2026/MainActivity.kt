@@ -7,6 +7,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import jp.fairguide.jimtof2026.notify.Notifications
+import jp.fairguide.jimtof2026.logic.ReportPreset
 import jp.fairguide.jimtof2026.ui.AppTab
 import jp.fairguide.jimtof2026.ui.AppViewModel
 import jp.fairguide.jimtof2026.ui.GuideApp
@@ -45,7 +46,21 @@ class MainActivity : ComponentActivity() {
         intent?.getStringExtra(EXTRA_EVENT_DATE)?.let { viewModel.selectScheduleDate(it) }
         intent?.getStringExtra(EXTRA_SEARCH)?.let {
             viewModel.selectTab(AppTab.VENUE)
+            viewModel.resetSearch()
             viewModel.updateSearch(it)
+        }
+        // 画面の確認用：絞り込みを開いた状態で起動する
+        intent?.getStringExtra(EXTRA_NOVELTY)?.let {
+            viewModel.selectTab(AppTab.VENUE)
+            viewModel.resetSearch()
+            viewModel.toggleNoveltyOnly(true)
+        }
+        intent?.getStringExtra(EXTRA_PRESET)?.let { name ->
+            ReportPreset.entries.firstOrNull { it.name == name }?.let { preset ->
+                viewModel.selectTab(AppTab.VENUE)
+                viewModel.resetSearch()
+                viewModel.selectReportPreset(preset)
+            }
         }
     }
 
@@ -53,5 +68,7 @@ class MainActivity : ComponentActivity() {
         const val EXTRA_OPEN_TAB = "open_tab"
         const val EXTRA_EVENT_DATE = "event_date"
         const val EXTRA_SEARCH = "search_query"
+        const val EXTRA_NOVELTY = "novelty_only"
+        const val EXTRA_PRESET = "report_preset"
     }
 }
