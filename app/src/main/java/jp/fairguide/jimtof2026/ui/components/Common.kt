@@ -6,13 +6,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -30,6 +28,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
@@ -42,7 +42,7 @@ import jp.fairguide.jimtof2026.ui.theme.PlaceColor
 
 /* 余白の基準：画面の左右 16dp、カード内 16dp、カード同士 12dp、要素同士 8dp／4dp */
 
-/** 白いカード。情報の「まとまり」を1枚にする */
+/** 白いカード。情報の「まとまり」を1枚にする。accent を渡すと左端に棟の色の帯が入る */
 @Composable
 fun GuideCard(
     modifier: Modifier = Modifier,
@@ -53,25 +53,31 @@ fun GuideCard(
 ) {
     val colors = CardDefaults.cardColors(containerColor = GuideTheme.colors.card)
     val border = BorderStroke(1.dp, GuideTheme.colors.cardBorder)
-    val body: @Composable () -> Unit = {
-        Row(Modifier.height(IntrinsicSize.Min)) {
+    // 帯は描画で入れる（高さを測り直さないので、折り返す中身が切れない）
+    val inner = Modifier
+        .fillMaxWidth()
+        .then(
             if (accent != null) {
-                Box(
-                    Modifier
-                        .width(5.dp)
-                        .fillMaxHeight()
-                        .background(accent),
-                )
-            }
-            Column(Modifier.weight(1f).padding(contentPadding), content = content)
+                Modifier
+                    .drawBehind { drawRect(color = accent, size = Size(ACCENT_WIDTH.toPx(), this.size.height)) }
+                    .padding(start = ACCENT_WIDTH)
+            } else {
+                Modifier
+            },
+        )
+        .padding(contentPadding)
+    if (onClick != null) {
+        Card(onClick = onClick, modifier = modifier.fillMaxWidth(), colors = colors, border = border) {
+            Column(inner, content = content)
+        }
+    } else {
+        Card(modifier = modifier.fillMaxWidth(), colors = colors, border = border) {
+            Column(inner, content = content)
         }
     }
-    if (onClick != null) {
-        Card(onClick = onClick, modifier = modifier.fillMaxWidth(), colors = colors, border = border) { body() }
-    } else {
-        Card(modifier = modifier.fillMaxWidth(), colors = colors, border = border) { body() }
-    }
 }
+
+private val ACCENT_WIDTH = 5.dp
 
 /** 画面内の見出し。カードの外に置き、左の短い棒で区切りを示す */
 @Composable

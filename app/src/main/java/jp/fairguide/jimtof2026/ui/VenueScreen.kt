@@ -222,7 +222,7 @@ private fun SearchField(query: String, onChange: (String) -> Unit, onClear: () -
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
         textStyle = MaterialTheme.typography.bodyLarge,
-        placeholder = { Text("会社名・製品・小間番号（例：E2019）", maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        placeholder = { Text("社名・製品・小間番号", maxLines = 1, overflow = TextOverflow.Ellipsis) },
         leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
         trailingIcon = {
             if (query.isNotEmpty()) {
@@ -363,7 +363,7 @@ private fun ExhibitorCard(
             FilledTonalButton(onClick = { onAdd(ex, primaryBooth) }, enabled = !inList) {
                 Icon(if (inList) Icons.Filled.Check else Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
-                Text(if (inList) "リスト登録済み" else "ブースリストに追加")
+                Text(if (inList) "追加済み" else "リストに追加")
             }
             location?.let { loc ->
                 val hallId = hallIdFor(loc.hallId)

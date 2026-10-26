@@ -57,6 +57,7 @@ import jp.fairguide.jimtof2026.data.EventCategory
 import jp.fairguide.jimtof2026.data.FairEvent
 import jp.fairguide.jimtof2026.logic.FAIR_ZONE
 import jp.fairguide.jimtof2026.logic.hm
+import jp.fairguide.jimtof2026.logic.jpShort
 import jp.fairguide.jimtof2026.notify.ReminderScheduler
 import jp.fairguide.jimtof2026.ui.components.BulletText
 import jp.fairguide.jimtof2026.ui.components.EmptyState
@@ -179,12 +180,24 @@ fun ScheduleScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState) {
         }
         item(key = "notes") {
             Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "${selectedDate.jpShort()}の予定",
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = "${events.size}件",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 if (selectedDate.isAfter(data.days.last().date)) {
                     Text(
                         text = "会期の翌日の予定です",
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.padding(bottom = 4.dp),
+                        modifier = Modifier.padding(top = 2.dp),
                     )
                 }
                 Row(
@@ -266,7 +279,7 @@ private fun DaySelector(
                 onClick = { onSelect(date) },
                 modifier = Modifier
                     .weight(1f)
-                    .height(60.dp),
+                    .height(66.dp),
                 color = container,
                 contentColor = content,
                 shape = RoundedCornerShape(12.dp),
@@ -284,19 +297,26 @@ private fun DaySelector(
                         text = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.JAPANESE),
                         style = MaterialTheme.typography.labelSmall,
                         textAlign = TextAlign.Center,
+                        maxLines = 1,
                     )
                     Text(
-                        text = "${date.monthValue}/${date.dayOfMonth}",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        text = "${date.dayOfMonth}",
+                        style = MaterialTheme.typography.titleLarge,
                         textAlign = TextAlign.Center,
+                        maxLines = 1,
                     )
-                    if (isToday) {
+                    val note = when {
+                        isToday -> "今日"
+                        date.monthValue != dates.first().monthValue -> "${date.monthValue}月"
+                        else -> null
+                    }
+                    if (note != null) {
                         Text(
-                            text = "今日",
+                            text = note,
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.secondary,
+                            color = if (isToday) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Bold,
+                            maxLines = 1,
                         )
                     }
                 }

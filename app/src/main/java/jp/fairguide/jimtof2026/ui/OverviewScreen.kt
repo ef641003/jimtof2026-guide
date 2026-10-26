@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -81,7 +82,7 @@ fun OverviewScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item { HeroCard(data.info, status, data.days.size) }
-        item { QuickActions(onOpenSearch, onOpenSchedule) }
+        item { QuickActions(status, onOpenSearch, onOpenSchedule) }
         if (notices.isNotEmpty()) {
             item { NoticeCard(notices) }
         }
@@ -133,8 +134,12 @@ private fun HeroCard(info: FairInfo, status: FairStatus, totalDays: Int) {
                 Spacer(Modifier.width(8.dp))
                 Text(text = texts.kicker, style = MaterialTheme.typography.labelLarge, color = content.copy(alpha = 0.9f))
             }
-            Spacer(Modifier.height(4.dp))
-            Text(text = texts.headline, style = MaterialTheme.typography.headlineMedium)
+            Spacer(Modifier.height(6.dp))
+            texts.lead?.let { Text(text = it, style = MaterialTheme.typography.titleMedium, color = content.copy(alpha = 0.92f)) }
+            Text(
+                text = texts.big,
+                style = if (texts.numeric) MaterialTheme.typography.displaySmall else MaterialTheme.typography.headlineSmall,
+            )
             Text(text = texts.detail, style = MaterialTheme.typography.bodyLarge, color = content.copy(alpha = 0.92f))
             Spacer(Modifier.height(14.dp))
             HorizontalDivider(color = content.copy(alpha = 0.25f))
@@ -163,59 +168,69 @@ private fun StatusDot(status: FairStatus, fallback: Color) {
     )
 }
 
-private class StatusTexts(val kicker: String, val headline: String, val detail: String)
+/** kicker＝状態、lead＋big＝いちばん伝えたい数字、detail＝補足 */
+private class StatusTexts(val kicker: String, val lead: String?, val big: String, val numeric: Boolean, val detail: String)
 
 private fun statusTexts(status: FairStatus, totalDays: Int): StatusTexts = when (status) {
-    is FairStatus.Before -> StatusTexts(
-        "開幕前",
-        if (status.daysLeft <= 1L) "開幕は明日" else "開幕まであと${status.daysLeft}日",
-        "初日 ${status.firstDay.date.jpShort()} ${status.firstDay.open.hm()} 開場",
-    )
+    is FairStatus.Before -> {
+        val detail = "初日 ${status.firstDay.date.jpShort()} ${status.firstDay.open.hm()} 開場"
+        if (status.daysLeft <= 1L) StatusTexts("開幕前", null, "開幕は明日", false, detail)
+        else StatusTexts("開幕前", "開幕まであと", "${status.daysLeft}日", true, detail)
+    }
     is FairStatus.BeforeOpen -> StatusTexts(
         "本日 ${status.dayIndex}日目（全${totalDays}日）",
-        "開場まであと${formatDuration(status.minutesToOpen)}",
+        "開場まであと",
+        formatDuration(status.minutesToOpen),
+        true,
         "${status.day.open.hm()} 開場・${status.day.close.hm()} 閉場",
     )
     is FairStatus.Open -> StatusTexts(
         "開催中・${status.dayIndex}日目（全${totalDays}日）",
-        "閉場まであと${formatDuration(status.minutesToClose)}",
+        "閉場まであと",
+        formatDuration(status.minutesToClose),
+        true,
         (if (status.isLastDay) "最終日は" else "本日は") + "${status.day.close.hm()}まで",
     )
     is FairStatus.ClosedForDay -> StatusTexts(
         "本日 ${status.dayIndex}日目は終了",
+        null,
         "本日の展示は終了しました",
+        false,
         "次は ${status.next.date.jpShort()} ${status.next.open.hm()} 開場",
     )
-    FairStatus.Ended -> StatusTexts("会期終了", "JIMTOF2026 は終了しました", "ご来場おつかれさまでした")
+    FairStatus.Ended -> StatusTexts("会期終了", null, "JIMTOF2026 は終了しました", false, "ご来場おつかれさまでした")
 }
 
-/** よく使う2つの操作を、親指の届くところに大きく置く */
+/** よく使う2つの操作を、親指の届くところに大きく置く（文字は1行に収まる長さにする） */
 @Composable
-private fun QuickActions(onOpenSearch: () -> Unit, onOpenSchedule: () -> Unit) {
+private fun QuickActions(status: FairStatus, onOpenSearch: () -> Unit, onOpenSchedule: () -> Unit) {
+    val duringFair = status is FairStatus.Open || status is FairStatus.BeforeOpen || status is FairStatus.ClosedForDay
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         Button(
             onClick = onOpenSearch,
             modifier = Modifier
                 .weight(1f)
                 .height(52.dp),
-            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+            contentPadding = PaddingValues(horizontal = 12.dp),
+            colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.secondary,
                 contentColor = MaterialTheme.colorScheme.onSecondary,
             ),
         ) {
             Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("出展社をさがす", style = MaterialTheme.typography.titleSmall)
+            Spacer(Modifier.width(6.dp))
+            Text("出展社検索", style = MaterialTheme.typography.titleSmall, maxLines = 1)
         }
         FilledTonalButton(
             onClick = onOpenSchedule,
             modifier = Modifier
                 .weight(1f)
                 .height(52.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp),
         ) {
             Icon(Icons.Filled.DateRange, contentDescription = null, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("きょうの予定", style = MaterialTheme.typography.titleSmall)
+            Spacer(Modifier.width(6.dp))
+            Text(if (duringFair) "今日の予定" else "予定を見る", style = MaterialTheme.typography.titleSmall, maxLines = 1)
         }
     }
 }
