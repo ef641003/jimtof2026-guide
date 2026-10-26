@@ -98,6 +98,9 @@ fun VenueScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenUr
         }
     }
 
+    // 絞り込みを切り替えたら一覧の先頭に戻す（上の絞り込みボタンが見える位置）
+    LaunchedEffect(vm.reportPreset, vm.noveltyOnly) { listState.scrollToItem(0) }
+
     val counts = remember(vm.myList, data) {
         vm.myList.mapNotNull { item ->
             val loc = BoothCode.locate(item.booth) ?: return@mapNotNull null
