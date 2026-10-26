@@ -2,6 +2,7 @@ package jp.fairguide.jimtof2026.logic
 
 import jp.fairguide.jimtof2026.data.Exhibitor
 import jp.fairguide.jimtof2026.data.ExhibitorData
+import jp.fairguide.jimtof2026.data.NoveltyData
 import jp.fairguide.jimtof2026.data.ProductCategories
 import java.text.Normalizer
 
@@ -17,7 +18,7 @@ data class ExhibitorHit(
  * 表記ゆれ（全角・半角、カタカナ・ひらがな、大文字・小文字、長音・中黒・空白）は吸収する。
  * 複数の語を空白で区切ると、すべての語に当てはまる会社だけを出す。
  */
-class ExhibitorIndex(val data: ExhibitorData) {
+class ExhibitorIndex(val data: ExhibitorData, novelty: NoveltyData? = null) {
 
     private class Entry(
         val exhibitor: Exhibitor,
@@ -32,6 +33,8 @@ class ExhibitorIndex(val data: ExhibitorData) {
         val codes: Set<String>,
         /** 正規化した分類名と表示用の分類名（親を含む） */
         val categoryText: List<Pair<String, String>>,
+        /** ノベルティの品名（正規化済み）。「トート」「キーホルダー」などで探せる */
+        val noveltyText: List<String>,
     )
 
     /** 検索語1つぶん。言い換えは語ごとに先に解決しておく */
@@ -68,6 +71,7 @@ class ExhibitorIndex(val data: ExhibitorData) {
                 hallRank = BoothCode.hallRank(first),
                 codes = expanded,
                 categoryText = texts,
+                noveltyText = novelty?.infoFor(ex).orEmpty().map { normalize(it.item) },
             )
         }
         synonymKeys = data.synonyms.map { (k, v) -> normalize(k) to v }
@@ -86,14 +90,19 @@ class ExhibitorIndex(val data: ExhibitorData) {
         return out
     }
 
-    fun search(query: String, limit: Int = 200): List<ExhibitorHit> {
+    /**
+     * filter を渡すと、それに当てはまる会社だけを対象にする（ノベルティありの絞り込みなど）。
+     * 検索語が空でも filter があれば、当てはまる会社をすべて会場の歩く順に返す。
+     */
+    fun search(query: String, limit: Int = 200, filter: ((Exhibitor) -> Boolean)? = null): List<ExhibitorHit> {
         val tokens = query.trim().split(WHITESPACE).mapNotNull { raw ->
             val t = normalize(raw)
             if (t.isEmpty()) null else Token(raw, t, synonymCodes(t))
         }
-        if (tokens.isEmpty()) return emptyList()
+        if (tokens.isEmpty() && filter == null) return emptyList()
         val scored = ArrayList<Pair<Entry, ExhibitorHit>>()
         for (e in entries) {
+            if (filter != null && !filter(e.exhibitor)) continue
             var total = 0
             var matched: String? = null
             var ok = true
@@ -169,6 +178,8 @@ class ExhibitorIndex(val data: ExhibitorData) {
                 if (norm.contains(t)) return 40 to display
             }
         }
+        // ノベルティの品名（トートバッグ、キーホルダーなど）
+        if (t.length >= 2 && !token.shortLatin && e.noveltyText.any { it.contains(t) }) return 38 to null
         // 言い換え（立旋盤 → NC旋盤（立軸） など）。分類名に直接当たるものより下に並べる
         if (token.synonymCodes.isNotEmpty()) {
             val hit = token.synonymCodes.firstOrNull { it in e.codes }

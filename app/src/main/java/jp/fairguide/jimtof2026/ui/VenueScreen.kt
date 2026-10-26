@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
@@ -33,6 +34,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -54,6 +56,8 @@ import androidx.compose.ui.unit.dp
 import jp.fairguide.jimtof2026.data.Exhibitor
 import jp.fairguide.jimtof2026.data.ExhibitorData
 import jp.fairguide.jimtof2026.data.Hall
+import jp.fairguide.jimtof2026.data.NoveltyInfo
+import jp.fairguide.jimtof2026.data.NoveltySource
 import jp.fairguide.jimtof2026.logic.BoothCode
 import jp.fairguide.jimtof2026.logic.ExhibitorHit
 import jp.fairguide.jimtof2026.ui.components.BoothBadge
@@ -100,8 +104,18 @@ fun VenueScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenUr
         }.groupingBy { it }.eachCount()
     }
     val selectedHall = data.halls.firstOrNull { it.id == selectedId }
-    val searching = vm.searchQuery.isNotBlank()
+    val searching = vm.searchQuery.isNotBlank() || vm.noveltyOnly
     val index = vm.exhibitorIndex
+    var noteTarget by remember { mutableStateOf<Exhibitor?>(null) }
+    val noveltyCount = remember(index, vm.noveltyData, vm.userNovelty) {
+        index?.data?.exhibitors?.count { vm.hasNovelty(it) }
+    }
+    val noveltyUi = NoveltyUi(
+        infosOf = vm::noveltyOf,
+        noteOf = vm::noveltyNoteOf,
+        sources = vm.noveltyData?.sources.orEmpty(),
+        onEdit = { noteTarget = it },
+    )
 
     LazyColumn(
         state = listState,
@@ -118,11 +132,36 @@ fun VenueScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenUr
             )
         }
 
+        item(key = "filters") {
+            Column {
+                FilterChip(
+                    selected = vm.noveltyOnly,
+                    onClick = { vm.setNoveltyOnly(!vm.noveltyOnly) },
+                    label = {
+                        Text(if (noveltyCount != null && noveltyCount > 0) "ノベルティあり（${noveltyCount}社）" else "ノベルティあり")
+                    },
+                    leadingIcon = if (vm.noveltyOnly) {
+                        { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                    } else {
+                        null
+                    },
+                )
+                if (vm.noveltyOnly) {
+                    Caption(
+                        "公開情報で確認できた会社と、自分で記録した会社だけを出しています。" +
+                            "ここに出ない会社にノベルティが無いとは限りません。",
+                    )
+                }
+            }
+        }
+
         if (searching) {
             searchResults(
                 hits = vm.searchHits,
                 loaded = index != null,
                 query = vm.searchQuery,
+                noveltyOnly = vm.noveltyOnly,
+                novelty = noveltyUi,
                 data = index?.data,
                 isInList = { ex, booth -> vm.isInMyList(ex, booth) },
                 onAdd = { ex, booth ->
@@ -135,7 +174,7 @@ fun VenueScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenUr
                 },
                 onShowOnMap = { hallId ->
                     focusManager.clearFocus()
-                    vm.clearSearch()
+                    vm.resetSearch()
                     vm.focusHall(hallId)
                 },
                 onOpenUrl = onOpenUrl,
@@ -212,6 +251,116 @@ fun VenueScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenUr
             }
         }
     }
+
+    noteTarget?.let { target ->
+        NoveltyNoteDialog(
+            exhibitor = target,
+            initial = vm.noveltyNoteOf(target),
+            onSave = {
+                vm.setNoveltyNote(target, it)
+                noteTarget = null
+            },
+            onRemove = {
+                vm.setNoveltyNote(target, null)
+                noteTarget = null
+            },
+            onDismiss = { noteTarget = null },
+        )
+    }
+}
+
+/** 検索結果のカードに出すノベルティの情報と操作 */
+private class NoveltyUi(
+    val infosOf: (Exhibitor) -> List<NoveltyInfo>,
+    val noteOf: (Exhibitor) -> String?,
+    val sources: Map<String, NoveltySource>,
+    val onEdit: (Exhibitor) -> Unit,
+)
+
+@Composable
+private fun NoveltyNoteDialog(
+    exhibitor: Exhibitor,
+    initial: String?,
+    onSave: (String) -> Unit,
+    onRemove: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var memo by rememberSaveable(exhibitor.name) { mutableStateOf(initial ?: "") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("ノベルティを記録") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(exhibitor.name, style = MaterialTheme.typography.bodyMedium)
+                OutlinedTextField(
+                    value = memo,
+                    onValueChange = { memo = it.take(120) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("何がもらえた？（空でもOK）") },
+                    minLines = 2,
+                )
+                Text(
+                    "この端末の中だけに保存します。「ノベルティあり」の絞り込みに出るようになります。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(memo) }) { Text("保存") } },
+        dismissButton = {
+            Row {
+                if (initial != null) TextButton(onClick = onRemove) { Text("記録を外す") }
+                TextButton(onClick = onDismiss) { Text("閉じる") }
+            }
+        },
+    )
+}
+
+@Composable
+private fun NoveltyBlock(
+    infos: List<NoveltyInfo>,
+    note: String?,
+    sources: Map<String, NoveltySource>,
+    onOpenUrl: (String) -> Unit,
+) {
+    val c = GuideTheme.colors.warn
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = c.container,
+        contentColor = c.onContainer,
+        shape = MaterialTheme.shapes.small,
+    ) {
+        Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
+            Text("ノベルティ", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+            infos.forEach { info ->
+                Spacer(Modifier.height(6.dp))
+                Text(info.item, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                Text("条件：${info.condition}", style = MaterialTheme.typography.bodySmall)
+                Text("数量：${info.quantity}", style = MaterialTheme.typography.bodySmall)
+            }
+            if (infos.isNotEmpty()) {
+                Text(
+                    text = "先着・なくなり次第終了のものが多く、すでに配り終えていることもあります。",
+                    modifier = Modifier.padding(top = 6.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                infos.map { it.sourceId }.distinct().mapNotNull { sources[it] }.forEach { src ->
+                    Text("出典：${src.label}", style = MaterialTheme.typography.bodySmall)
+                    TextButton(onClick = { onOpenUrl(src.url) }, contentPadding = PaddingValues(0.dp)) {
+                        Text("出典ページを開く（外部サイト）")
+                    }
+                }
+            }
+            note?.let {
+                Text(
+                    text = if (it.isBlank()) "自分の記録：ノベルティあり" else "自分のメモ：$it",
+                    modifier = Modifier.padding(top = 6.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -254,6 +403,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.searchResults(
     hits: List<ExhibitorHit>,
     loaded: Boolean,
     query: String,
+    noveltyOnly: Boolean,
+    novelty: NoveltyUi,
     data: ExhibitorData?,
     isInList: (Exhibitor, String) -> Boolean,
     onAdd: (Exhibitor, String) -> Unit,
@@ -273,7 +424,11 @@ private fun androidx.compose.foundation.lazy.LazyListScope.searchResults(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = "「$query」",
+                    text = when {
+                        query.isBlank() -> "ノベルティあり"
+                        noveltyOnly -> "「$query」・ノベルティあり"
+                        else -> "「$query」"
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -286,8 +441,13 @@ private fun androidx.compose.foundation.lazy.LazyListScope.searchResults(
         item(key = "empty") {
             EmptyState(
                 title = "見つかりませんでした",
-                body = "社名の一部（例：森精機、mazak）、製品名（例：立旋盤、エンドミル）、小間番号（例：E2019）で探せます。" +
-                    "共同出展・内部出展の会社は親会社の小間に出ています。",
+                body = if (noveltyOnly) {
+                    "ノベルティありの会社には当てはまりませんでした。「ノベルティあり」を外すと、ほかの会社も探せます。" +
+                        "会場でノベルティを見つけたら、会社のカードの「ノベルティを記録」で残せます。"
+                } else {
+                    "社名の一部（例：森精機、mazak）、製品名（例：立旋盤、エンドミル）、小間番号（例：E2019）で探せます。" +
+                        "共同出展・内部出展の会社は親会社の小間に出ています。"
+                },
             )
         }
     }
@@ -295,6 +455,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.searchResults(
         ExhibitorCard(
             hit = hit,
             data = data,
+            novelty = novelty,
             isInList = isInList,
             onAdd = onAdd,
             onShowOnMap = onShowOnMap,
@@ -308,12 +469,15 @@ private fun androidx.compose.foundation.lazy.LazyListScope.searchResults(
 private fun ExhibitorCard(
     hit: ExhibitorHit,
     data: ExhibitorData?,
+    novelty: NoveltyUi,
     isInList: (Exhibitor, String) -> Boolean,
     onAdd: (Exhibitor, String) -> Unit,
     onShowOnMap: (String) -> Unit,
     onOpenUrl: (String) -> Unit,
 ) {
     val ex = hit.exhibitor
+    val noveltyInfos = novelty.infosOf(ex)
+    val noveltyNote = novelty.noteOf(ex)
     val primaryBooth = ex.booths.first()
     val location = remember(primaryBooth) { BoothCode.locate(primaryBooth) }
     val color = placeColorFor(location?.hallId)
@@ -357,6 +521,10 @@ private fun ExhibitorCard(
                 Tag("分類で一致：$matched", MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.onSurface)
             }
         }
+        if (noveltyInfos.isNotEmpty() || noveltyNote != null) {
+            Spacer(Modifier.height(8.dp))
+            NoveltyBlock(noveltyInfos, noveltyNote, novelty.sources, onOpenUrl)
+        }
         Spacer(Modifier.height(8.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(0.dp)) {
             val inList = isInList(ex, primaryBooth)
@@ -364,6 +532,9 @@ private fun ExhibitorCard(
                 Icon(if (inList) Icons.Filled.Check else Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
                 Text(if (inList) "追加済み" else "リストに追加")
+            }
+            TextButton(onClick = { novelty.onEdit(ex) }) {
+                Text(if (noveltyNote != null) "ノベルティのメモを編集" else "ノベルティを記録")
             }
             location?.let { loc ->
                 val hallId = hallIdFor(loc.hallId)
