@@ -22,6 +22,11 @@ class BoothCodeTest {
         assertEquals("E7", BoothCode.locate("ｅ７００２")!!.hallId)
         assertEquals("W3", BoothCode.locate(" w3-104 ")!!.hallId)
         assertEquals("S4029", BoothCode.normalize("s 4029"))
+        assertEquals("E1024", BoothCode.normalize("E-1024"))
+        // パビリオン内の小間は「-番号」を残す
+        assertEquals("E1009-2", BoothCode.normalize("ｅ１００９－２"))
+        assertEquals("E1", BoothCode.locate("E1009-2")!!.hallId)
+        assertEquals("E1009", BoothCode.normalize("E1009-"))
     }
 
     @Test

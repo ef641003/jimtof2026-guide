@@ -112,7 +112,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun runSearch(query: String) {
         val index = exhibitorIndex ?: return
-        val hits = withContext(Dispatchers.Default) { index.search(query) }
+        val hits = withContext(Dispatchers.Default) { index.search(query, limit = Int.MAX_VALUE) }
         if (query == searchQuery) searchHits = hits
     }
 

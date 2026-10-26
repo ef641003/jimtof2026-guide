@@ -36,7 +36,7 @@ class ExhibitorSearchTest {
         assertEquals(ExhibitorIndex.normalize("ＤＭＧ森精機"), ExhibitorIndex.normalize("dmg森精機"))
         assertEquals(ExhibitorIndex.normalize("ミツトヨ"), ExhibitorIndex.normalize("みつとよ"))
         assertEquals(ExhibitorIndex.normalize("レーザー"), ExhibitorIndex.normalize("レーザ"))
-        assertEquals("おーえむ製作所", ExhibitorIndex.stripCorporate(ExhibitorIndex.normalize("株式会社オーエム製作所")))
+        assertEquals("おえむ製作所", ExhibitorIndex.stripCorporate(ExhibitorIndex.normalize("株式会社オーエム製作所")))
     }
 
     @Test
@@ -61,14 +61,20 @@ class ExhibitorSearchTest {
         assertTrue(index.search("E1009-2").first().exhibitor.booths.contains("E1009-2"))
         // ホールだけ指定すると、そのホールの出展社が全部出る
         assertTrue(index.search("E7").size > 50)
-        assertTrue(index.search("東7").size > 50)
+        assertEquals(index.search("E7").size, index.search("東7").size)
+        assertEquals(index.search("E7").size, index.search("東7ホール").size)
+        // ホール内は小間番号順に並ぶ
+        val booths = index.search("E7").map { it.exhibitor.booths.first() }
+        assertEquals(booths.sorted(), booths)
     }
 
     @Test
     fun findsByCategoryAndSynonym() {
         val vtl = index.search("立旋盤")
         assertTrue(vtl.any { it.exhibitor.name == "株式会社オーエム製作所" })
-        assertTrue(vtl.all { it.matchedCategory != null })
+        assertTrue(vtl.all { it.matchedCategory == "NC旋盤（立軸）" })
+        // 「旋盤」だけの会社（立旋盤なし）は混ざらない
+        assertTrue(vtl.size < index.search("旋盤").size)
         val cmm = index.search("三次元測定")
         assertTrue(cmm.any { it.exhibitor.name == "株式会社ミツトヨ" })
         assertTrue(index.search("エンドミル").size > 30)

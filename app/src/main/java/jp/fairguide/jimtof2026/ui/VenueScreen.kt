@@ -70,7 +70,7 @@ import jp.fairguide.jimtof2026.ui.theme.GuideTheme
 import kotlinx.coroutines.launch
 
 /** 検索の入口になる言葉。押すとその語で検索する */
-private val QUICK_KEYWORDS = listOf("旋盤", "マシニングセンタ", "研削盤", "放電加工", "切削工具", "測定", "CNC", "ロボット", "3Dプリンタ")
+private val QUICK_KEYWORDS = listOf("旋盤", "マシニングセンタ", "研削盤", "放電加工", "切削工具", "チャック", "測定", "NC装置", "3Dプリンタ")
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
