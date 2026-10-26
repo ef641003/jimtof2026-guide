@@ -137,7 +137,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun setNoveltyOnly(on: Boolean) {
+    fun toggleNoveltyOnly(on: Boolean) {
         noveltyOnly = on
         ensureExhibitors()
         searchJob?.cancel()

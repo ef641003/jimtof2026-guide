@@ -137,14 +137,12 @@ fun VenueScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenUr
             Column {
                 FilterChip(
                     selected = vm.noveltyOnly,
-                    onClick = { vm.setNoveltyOnly(!vm.noveltyOnly) },
+                    onClick = { vm.toggleNoveltyOnly(!vm.noveltyOnly) },
                     label = {
                         Text(if (noveltyCount != null && noveltyCount > 0) "ノベルティあり（${noveltyCount}社）" else "ノベルティあり")
                     },
-                    leadingIcon = if (vm.noveltyOnly) {
-                        { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                    } else {
-                        null
+                    leadingIcon = {
+                        if (vm.noveltyOnly) Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                     },
                 )
                 if (vm.noveltyOnly) {
