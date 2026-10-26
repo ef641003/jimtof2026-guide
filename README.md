@@ -38,6 +38,10 @@ Google Play の配信ではないため、Play プロテクトの警告が出る
 - 実機での動作確認は限られています。表示の不具合や誤りは [Issues](../../issues) へ。権利者の方からの削除・修正のご依頼も、Issues でお受けします。
 - 「JIMTOF」は主催者の名称です。このアプリはその名称を、対象の展示会を示す目的でのみ使っています。
 
+## ライセンス
+
+ソースコードは [MIT License](LICENSE) です。`app/src/main/assets/` の出展社・ノベルティのデータと `tools/raw/` は対象外で、それぞれの権利者に帰属します。
+
 ## 出典
 
 - [JIMTOF2026 公式サイト](https://www.jimtof.org/jp/)、主催者プレスリリース（2026年9月28日）、[東京ビッグサイト 交通アクセス](https://www.bigsight.jp/visitor/access/)

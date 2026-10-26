@@ -1,0 +1,36 @@
+MIT License
+
+Copyright (c) 2026 ef641003
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+----------------------------------------------------------------------
+Data not covered by this license / このライセンスの対象外:
+
+The MIT License above applies to the source code only. It does NOT apply to
+the data files app/src/main/assets/exhibitors.json,
+app/src/main/assets/novelty.json and tools/raw/. They contain facts copied
+from the official JIMTOF2026 online catalog and from public announcements by
+third parties, and remain the property of their respective rights holders.
+
+上記の MIT License はソースコードにのみ適用されます。
+app/src/main/assets/exhibitors.json、app/src/main/assets/novelty.json、
+tools/raw/ のデータは対象外です。JIMTOF2026 公式オンラインカタログおよび
+各社・第三者の公開情報から書き写した事実で、権利はそれぞれの権利者に
+帰属します。
