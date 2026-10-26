@@ -11,6 +11,8 @@ data class ExhibitorHit(
     val exhibitor: Exhibitor,
     val score: Int,
     val matchedCategory: String?,
+    /** 見学テーマ（ReportPreset）で候補に入った理由 */
+    val presetReason: String? = null,
 )
 
 /**
@@ -94,18 +96,30 @@ class ExhibitorIndex(val data: ExhibitorData, novelty: NoveltyData? = null) {
      * filter を渡すと、それに当てはまる会社だけを対象にする（ノベルティありの絞り込みなど）。
      * 検索語が空でも filter があれば、当てはまる会社をすべて会場の歩く順に返す。
      */
-    fun search(query: String, limit: Int = 200, filter: ((Exhibitor) -> Boolean)? = null): List<ExhibitorHit> {
+    fun search(
+        query: String,
+        limit: Int = 200,
+        filter: ((Exhibitor) -> Boolean)? = null,
+        preset: ReportPreset? = null,
+    ): List<ExhibitorHit> {
         val tokens = query.trim().split(WHITESPACE).mapNotNull { raw ->
             val t = normalize(raw)
             if (t.isEmpty()) null else Token(raw, t, synonymCodes(t))
         }
-        if (tokens.isEmpty() && filter == null) return emptyList()
+        if (tokens.isEmpty() && filter == null && preset == null) return emptyList()
         val scored = ArrayList<Pair<Entry, ExhibitorHit>>()
         for (e in entries) {
             if (filter != null && !filter(e.exhibitor)) continue
             var total = 0
             var matched: String? = null
             var ok = true
+            var presetReason: String? = null
+            if (preset != null) {
+                val m = preset.evaluate(e.exhibitor, data.categories)
+                if (m == null) continue
+                total += m.score
+                presetReason = m.reason
+            }
             for (t in tokens) {
                 val (s, cat) = scoreToken(e, t)
                 if (s == 0) {
@@ -115,7 +129,7 @@ class ExhibitorIndex(val data: ExhibitorData, novelty: NoveltyData? = null) {
                 total += s
                 if (matched == null && cat != null) matched = cat
             }
-            if (ok) scored += e to ExhibitorHit(e.exhibitor, total, matched)
+            if (ok) scored += e to ExhibitorHit(e.exhibitor, total, matched, presetReason)
         }
         // 点数が同じなら、会場を歩く順（東→西→南、小間番号順）。同じ小間では本体の出展者を先に
         scored.sortWith(

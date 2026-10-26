@@ -60,6 +60,7 @@ import jp.fairguide.jimtof2026.data.NoveltyInfo
 import jp.fairguide.jimtof2026.data.NoveltySource
 import jp.fairguide.jimtof2026.logic.BoothCode
 import jp.fairguide.jimtof2026.logic.ExhibitorHit
+import jp.fairguide.jimtof2026.logic.ReportPreset
 import jp.fairguide.jimtof2026.ui.components.BoothBadge
 import jp.fairguide.jimtof2026.ui.components.BulletText
 import jp.fairguide.jimtof2026.ui.components.Caption
@@ -104,7 +105,7 @@ fun VenueScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenUr
         }.groupingBy { it }.eachCount()
     }
     val selectedHall = data.halls.firstOrNull { it.id == selectedId }
-    val searching = vm.searchQuery.isNotBlank() || vm.noveltyOnly
+    val searching = vm.searchQuery.isNotBlank() || vm.noveltyOnly || vm.reportPreset != null
     val index = vm.exhibitorIndex
     var noteTarget by remember { mutableStateOf<Exhibitor?>(null) }
     val noveltyCount = remember(index, vm.noveltyData, vm.userNovelty) {
@@ -152,6 +153,22 @@ fun VenueScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenUr
                             "ここに出ない会社にノベルティが無いとは限りません。",
                     )
                 }
+                Text(
+                    text = "見学レポート用の候補",
+                    modifier = Modifier.padding(top = 4.dp, bottom = 2.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ReportPreset.entries.forEach { preset ->
+                        FilterChip(
+                            selected = vm.reportPreset == preset,
+                            onClick = { vm.selectReportPreset(preset) },
+                            label = { Text(preset.label) },
+                        )
+                    }
+                }
+                vm.reportPreset?.let { Caption(it.description) }
             }
         }
 
@@ -161,6 +178,7 @@ fun VenueScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenUr
                 loaded = index != null,
                 query = vm.searchQuery,
                 noveltyOnly = vm.noveltyOnly,
+                presetLabel = vm.reportPreset?.shortLabel,
                 novelty = noveltyUi,
                 data = index?.data,
                 isInList = { ex, booth -> vm.isInMyList(ex, booth) },
@@ -404,6 +422,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.searchResults(
     loaded: Boolean,
     query: String,
     noveltyOnly: Boolean,
+    presetLabel: String?,
     novelty: NoveltyUi,
     data: ExhibitorData?,
     isInList: (Exhibitor, String) -> Boolean,
@@ -424,11 +443,11 @@ private fun androidx.compose.foundation.lazy.LazyListScope.searchResults(
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = when {
-                        query.isBlank() -> "ノベルティあり"
-                        noveltyOnly -> "「$query」・ノベルティあり"
-                        else -> "「$query」"
-                    },
+                    text = listOfNotNull(
+                        presetLabel?.let { "見学候補：$it" },
+                        if (noveltyOnly) "ノベルティあり" else null,
+                        if (query.isNotBlank()) "「$query」" else null,
+                    ).joinToString("・"),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -441,7 +460,10 @@ private fun androidx.compose.foundation.lazy.LazyListScope.searchResults(
         item(key = "empty") {
             EmptyState(
                 title = "見つかりませんでした",
-                body = if (noveltyOnly) {
+                body = if (presetLabel != null) {
+                    "この見学候補には当てはまりませんでした。検索語を変えるか、「見学レポート用の候補」をもう一度押して外してください。" +
+                        "分類に登録のない会社は、社名や製品名の検索で探せます。"
+                } else if (noveltyOnly) {
                     "ノベルティありの会社には当てはまりませんでした。「ノベルティあり」を外すと、ほかの会社も探せます。" +
                         "会場でノベルティを見つけたら、会社のカードの「ノベルティを記録」で残せます。"
                 } else {
@@ -514,6 +536,15 @@ private fun ExhibitorCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
+            )
+        }
+        hit.presetReason?.let { reason ->
+            Text(
+                text = "候補の理由：$reason",
+                modifier = Modifier.padding(top = 6.dp),
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.secondary,
             )
         }
         hit.matchedCategory?.let { matched ->

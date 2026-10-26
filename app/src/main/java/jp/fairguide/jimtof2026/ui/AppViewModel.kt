@@ -22,6 +22,7 @@ import jp.fairguide.jimtof2026.data.ReminderStore
 import jp.fairguide.jimtof2026.logic.ExhibitorHit
 import jp.fairguide.jimtof2026.logic.ExhibitorIndex
 import jp.fairguide.jimtof2026.logic.FAIR_ZONE
+import jp.fairguide.jimtof2026.logic.ReportPreset
 import jp.fairguide.jimtof2026.notify.ReminderScheduler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -70,6 +71,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     var noveltyOnly by mutableStateOf(false)
         private set
 
+    /** 見学レポートの項目に合わせた候補の絞り込み（なければ null） */
+    var reportPreset by mutableStateOf<ReportPreset?>(null)
+        private set
+
     /** 公開情報から確認できたノベルティ（出展社データと一緒に読む） */
     var noveltyData by mutableStateOf<NoveltyData?>(null)
         private set
@@ -114,7 +119,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             noveltyData = novelty
             exhibitorIndex = index
             loadingIndex = false
-            if (searchQuery.isNotBlank() || noveltyOnly) runSearch(searchQuery)
+            if (hasCriteria()) runSearch(searchQuery)
         }
     }
 
@@ -122,7 +127,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         searchQuery = query
         ensureExhibitors()
         searchJob?.cancel()
-        if (query.isBlank() && !noveltyOnly) {
+        if (query.isBlank() && !noveltyOnly && reportPreset == null) {
             searchHits = emptyList()
             return
         }
@@ -136,16 +141,31 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         noveltyOnly = on
         ensureExhibitors()
         searchJob?.cancel()
-        if (searchQuery.isBlank() && !on) {
+        if (!hasCriteria()) {
             searchHits = emptyList()
             return
         }
         searchJob = viewModelScope.launch { runSearch(searchQuery) }
     }
 
+    /** 見学テーマを選ぶ。同じものをもう一度押すと外れる */
+    fun selectReportPreset(preset: ReportPreset?) {
+        reportPreset = if (preset == reportPreset) null else preset
+        ensureExhibitors()
+        searchJob?.cancel()
+        if (!hasCriteria()) {
+            searchHits = emptyList()
+            return
+        }
+        searchJob = viewModelScope.launch { runSearch(searchQuery) }
+    }
+
+    private fun hasCriteria(): Boolean = searchQuery.isNotBlank() || noveltyOnly || reportPreset != null
+
     private suspend fun runSearch(query: String) {
         val index = exhibitorIndex ?: return
         val only = noveltyOnly
+        val preset = reportPreset
         // 検索は別スレッドで走るので、いまの状態を先に控えてから渡す
         val official = noveltyData?.byExhibitor.orEmpty()
         val mine = userNovelty
@@ -154,8 +174,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         } else {
             null
         }
-        val hits = withContext(Dispatchers.Default) { index.search(query, limit = Int.MAX_VALUE, filter = filter) }
-        if (query == searchQuery && only == noveltyOnly) searchHits = hits
+        val hits = withContext(Dispatchers.Default) { index.search(query, limit = Int.MAX_VALUE, filter = filter, preset = preset) }
+        if (query == searchQuery && only == noveltyOnly && preset == reportPreset) searchHits = hits
     }
 
     /** 検索語だけ消す（絞り込みは残る） */
@@ -164,6 +184,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     /** 検索語も絞り込みも消して、会場マップの表示に戻す */
     fun resetSearch() {
         noveltyOnly = false
+        reportPreset = null
         updateSearch("")
     }
 
