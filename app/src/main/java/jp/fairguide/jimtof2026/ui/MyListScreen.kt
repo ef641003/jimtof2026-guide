@@ -11,16 +11,21 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
@@ -49,12 +54,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import jp.fairguide.jimtof2026.data.BoothItem
+import jp.fairguide.jimtof2026.data.CheckCodec
 import jp.fairguide.jimtof2026.data.Exhibitor
+import jp.fairguide.jimtof2026.logic.BoothChecklist
 import jp.fairguide.jimtof2026.logic.BoothCode
 import jp.fairguide.jimtof2026.logic.ExhibitorIndex
 import jp.fairguide.jimtof2026.ui.components.BoothBadge
@@ -92,6 +100,7 @@ object MyListOrder {
             sb.append(item.company)
             if (item.memo.isNotBlank()) sb.append(" … ").append(item.memo.replace('\n', ' '))
             sb.append('\n')
+            for (c in item.checks) sb.append("　").append(if (c.done) "☑ " else "☐ ").append(c.text).append('\n')
         }
         return sb.toString().trimEnd()
     }
@@ -218,6 +227,7 @@ fun MyListScreen(vm: AppViewModel, onOpenSearch: () -> Unit) {
                     is MyRow.Item -> BoothRow(
                         item = row.item,
                         onToggle = { vm.toggleVisited(row.item.id) },
+                        onToggleCheck = { vm.toggleCheck(row.item.id, it) },
                         onClick = {
                             editing = row.item
                             showEditor = true
@@ -250,6 +260,7 @@ fun MyListScreen(vm: AppViewModel, onOpenSearch: () -> Unit) {
         BoothEditorDialog(
             initial = editing,
             index = vm.exhibitorIndex,
+            reportChecks = { c, b -> vm.reportChecksFor(c, b) },
             onDismiss = { showEditor = false },
             onSave = {
                 vm.saveItem(it)
@@ -284,7 +295,7 @@ private fun GroupHeader(label: String, hallId: String?) {
 }
 
 @Composable
-private fun BoothRow(item: BoothItem, onToggle: () -> Unit, onClick: () -> Unit) {
+private fun BoothRow(item: BoothItem, onToggle: () -> Unit, onToggleCheck: (Int) -> Unit, onClick: () -> Unit) {
     val location = remember(item.booth) { BoothCode.locate(item.booth) }
     val code = BoothCode.normalize(item.booth)
     GuideCard(
@@ -346,6 +357,35 @@ private fun BoothRow(item: BoothItem, onToggle: () -> Unit, onClick: () -> Unit)
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
+                if (item.checks.isNotEmpty()) {
+                    Text(
+                        text = "確かめること ${BoothChecklist.progress(item.checks)}",
+                        modifier = Modifier.padding(top = 6.dp),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    // 見終わったブースは進み具合だけにして、一覧を短く保つ
+                    if (!item.visited) {
+                        item.checks.forEachIndexed { i, c ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 48.dp)
+                                    .toggleable(value = c.done, role = Role.Checkbox, onValueChange = { onToggleCheck(i) }),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Checkbox(checked = c.done, onCheckedChange = null)
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = c.text,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    textDecoration = if (c.done) TextDecoration.LineThrough else TextDecoration.None,
+                                    color = if (c.done) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -355,6 +395,7 @@ private fun BoothRow(item: BoothItem, onToggle: () -> Unit, onClick: () -> Unit)
 private fun BoothEditorDialog(
     initial: BoothItem?,
     index: ExhibitorIndex?,
+    reportChecks: (String, String) -> List<String>,
     onDismiss: () -> Unit,
     onSave: (BoothItem) -> Unit,
     onDelete: (Long) -> Unit,
@@ -364,6 +405,11 @@ private fun BoothEditorDialog(
     var memo by rememberSaveable { mutableStateOf(initial?.memo ?: "") }
     var suggestionsOpen by remember { mutableStateOf(false) }
     val location = remember(booth) { BoothCode.locate(booth) }
+    // チェックリスト：画面を回しても消えないよう文字列で持つ
+    var checksRaw by rememberSaveable { mutableStateOf(CheckCodec.pack(initial?.checks ?: emptyList())) }
+    var newCheck by rememberSaveable { mutableStateOf("") }
+    val checks = remember(checksRaw) { CheckCodec.unpack(checksRaw) }
+    val fromReport = remember(company, booth) { reportChecks(company, booth) }
 
     // 社名を入れると出展社データから候補を出し、選べば小間番号も入る
     val suggestions: List<Exhibitor> = remember(company, index, suggestionsOpen) {
@@ -375,7 +421,10 @@ private fun BoothEditorDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (initial == null) "ブースを追加" else "ブースを編集") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 OutlinedTextField(
                     value = company,
                     onValueChange = {
@@ -444,6 +493,48 @@ private fun BoothEditorDialog(
                     minLines = 2,
                     maxLines = 4,
                 )
+                Text("確かめること（チェックリスト）", style = MaterialTheme.typography.titleSmall)
+                checks.forEachIndexed { i, c ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = c.done,
+                            onCheckedChange = { checksRaw = CheckCodec.pack(BoothChecklist.toggle(checks, i)) },
+                        )
+                        Text(c.text, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                        IconButton(
+                            onClick = { checksRaw = CheckCodec.pack(checks.filterIndexed { j, _ -> j != i }) },
+                            modifier = Modifier.size(48.dp),
+                        ) { Icon(Icons.Filled.Close, contentDescription = "「${c.text}」を消す") }
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = newCheck,
+                        onValueChange = { newCheck = it.take(60) },
+                        modifier = Modifier.weight(1f),
+                        label = { Text("項目を足す") },
+                        singleLine = true,
+                    )
+                    IconButton(
+                        onClick = {
+                            checksRaw = CheckCodec.pack(BoothChecklist.merge(checks, listOf(newCheck)))
+                            newCheck = ""
+                        },
+                        enabled = newCheck.isNotBlank(),
+                        modifier = Modifier.size(48.dp),
+                    ) { Icon(Icons.Filled.Add, contentDescription = "項目を追加") }
+                }
+                val reportNew = fromReport.filter { r -> checks.none { it.text == r } }
+                if (reportNew.isNotEmpty()) {
+                    TextButton(onClick = { checksRaw = CheckCodec.pack(BoothChecklist.merge(checks, fromReport)) }) {
+                        Text("レポートの確認事項を入れる（${reportNew.size}件）")
+                    }
+                }
+                if (BoothChecklist.STANDARD.any { s -> checks.none { it.text == s } }) {
+                    TextButton(onClick = { checksRaw = CheckCodec.pack(BoothChecklist.merge(checks, BoothChecklist.STANDARD)) }) {
+                        Text("定番の項目を入れる")
+                    }
+                }
                 if (initial != null) {
                     TextButton(
                         onClick = { onDelete(initial.id) },
@@ -469,6 +560,8 @@ private fun BoothEditorDialog(
                             memo = memo.trim(),
                             visited = initial?.visited ?: false,
                             createdAt = initial?.createdAt ?: now,
+                            // 入力欄に書きかけの項目があれば、それも入れて保存する
+                            checks = BoothChecklist.merge(checks, listOf(newCheck)),
                         ),
                     )
                 },

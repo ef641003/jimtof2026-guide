@@ -20,6 +20,7 @@ import jp.fairguide.jimtof2026.data.NoveltyRepository
 import jp.fairguide.jimtof2026.data.MyListStore
 import jp.fairguide.jimtof2026.data.ReminderStore
 import jp.fairguide.jimtof2026.data.ReportData
+import jp.fairguide.jimtof2026.logic.BoothChecklist
 import jp.fairguide.jimtof2026.data.ReportExtra
 import jp.fairguide.jimtof2026.data.ReportNoteStore
 import jp.fairguide.jimtof2026.data.ReportNotes
@@ -306,7 +307,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun addExhibitorToMyList(exhibitor: Exhibitor, booth: String): Boolean {
         val exists = myList.any { it.company == exhibitor.name && it.booth.equals(booth, ignoreCase = true) }
         if (exists) return false
-        val now = System.currentTimeMillis()
+        val now = nextItemId()
         saveItem(
             BoothItem(
                 id = now,
@@ -315,6 +316,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 memo = "",
                 visited = false,
                 createdAt = now,
+                checks = BoothChecklist.merge(emptyList(), reportChecksFor(exhibitor.name, booth)),
             ),
         )
         return true
@@ -324,10 +326,28 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun addToMyListByName(company: String, booth: String): Boolean {
         val exists = myList.any { it.company == company && it.booth.equals(booth, ignoreCase = true) }
         if (exists) return false
-        val now = System.currentTimeMillis()
-        saveItem(BoothItem(id = now, company = company, booth = booth, memo = "", visited = false, createdAt = now))
+        val now = nextItemId()
+        saveItem(
+            BoothItem(
+                id = now, company = company, booth = booth, memo = "", visited = false, createdAt = now,
+                checks = BoothChecklist.merge(emptyList(), reportChecksFor(company, booth)),
+            ),
+        )
         return true
     }
+
+    /** 同じ瞬間に2件入れても番号がぶつからないようにする */
+    private fun nextItemId(): Long = maxOf(System.currentTimeMillis(), (myList.maxOfOrNull { it.id } ?: 0L) + 1)
+
+    /** 画面の確認用：レポート項目の先頭から数社をブースリストに入れる */
+    fun addFirstReportCompanies(itemId: String, count: Int) {
+        val data = reportData ?: runCatching { ReportRepository.get(app) }.getOrNull() ?: return
+        data.item(itemId)?.companies?.take(count)?.forEach { addToMyListByName(it.name, it.booth) }
+    }
+
+    /** 見学レポートのおすすめにある「ブースで確かめること」（その会社がおすすめに無ければ空） */
+    fun reportChecksFor(company: String, booth: String): List<String> =
+        BoothChecklist.fromReport(reportData ?: runCatching { ReportRepository.get(app) }.getOrNull(), company, booth)
 
     fun isInMyList(exhibitor: Exhibitor, booth: String): Boolean =
         myList.any { it.company == exhibitor.name && it.booth.equals(booth, ignoreCase = true) }
@@ -361,6 +381,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun deleteItem(id: Long) {
         myList = myList.filterNot { it.id == id }
+        listStore.save(myList)
+    }
+
+    /** チェックリストの項目を1つ付ける／外す */
+    fun toggleCheck(id: Long, index: Int) {
+        myList = myList.map { if (it.id == id) it.copy(checks = BoothChecklist.toggle(it.checks, index)) else it }
         listStore.save(myList)
     }
 

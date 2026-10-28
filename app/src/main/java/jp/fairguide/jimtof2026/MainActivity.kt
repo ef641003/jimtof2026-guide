@@ -59,6 +59,10 @@ class MainActivity : ComponentActivity() {
             viewModel.selectTab(AppTab.REPORT)
             viewModel.selectReportItem(id)
         }
+        // 画面の確認用：レポート項目の先頭2社をブースリストに入れてから開く
+        intent?.getStringExtra(EXTRA_REPORT_ADD)?.let { id ->
+            viewModel.addFirstReportCompanies(id, 2)
+        }
         intent?.getStringExtra(EXTRA_PRESET)?.let { name ->
             ReportPreset.entries.firstOrNull { it.name == name }?.let { preset ->
                 viewModel.selectTab(AppTab.VENUE)
@@ -75,5 +79,6 @@ class MainActivity : ComponentActivity() {
         const val EXTRA_NOVELTY = "novelty_only"
         const val EXTRA_PRESET = "report_preset"
         const val EXTRA_REPORT_ITEM = "report_item"
+        const val EXTRA_REPORT_ADD = "report_add"
     }
 }

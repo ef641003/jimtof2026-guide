@@ -66,6 +66,10 @@ swipe_up
 shot 05b-schedule-1027-scrolled 2
 adb shell am start -W -n $ACT --es open_tab mylist
 shot 06-mylist 3
+adb shell am start -W -n $ACT --es open_tab mylist --es report_add 1
+shot 06b-mylist-checklist 4
+swipe_up
+shot 06c-mylist-checklist2 2
 adb shell am start -W -n $ACT --es open_tab links
 shot 07-links 3
 
