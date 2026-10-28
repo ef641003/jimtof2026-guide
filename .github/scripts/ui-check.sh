@@ -46,6 +46,12 @@ adb shell am start -W -n $ACT --es open_tab report
 shot 10-report 5
 swipe_up
 shot 10b-report-scrolled 2
+swipe_up
+shot 10f-report-company 2
+swipe_up
+shot 10g-report-company2 2
+swipe_up
+shot 10h-report-company3 2
 adb shell am start -W -n $ACT --es open_tab report --es report_item 2
 shot 10c-report-item2 4
 adb shell am start -W -n $ACT --es open_tab report --es report_item 5
