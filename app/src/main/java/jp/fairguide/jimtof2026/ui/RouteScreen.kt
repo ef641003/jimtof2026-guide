@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import jp.fairguide.jimtof2026.data.ReportData
 import jp.fairguide.jimtof2026.data.RouteSettings
@@ -445,6 +446,7 @@ private fun StopCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.secondary,
                         maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
