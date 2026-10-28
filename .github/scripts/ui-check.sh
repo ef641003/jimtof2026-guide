@@ -42,8 +42,18 @@ adb shell am start -W -n $ACT --es report_preset COMPETITOR
 shot 04h-preset-competitor 4
 adb shell am start -W -n $ACT --es report_preset AUTOMATION
 shot 04i-preset-automation 4
-adb shell am start -W -n $ACT --es report_preset GRINDING
-shot 04j-preset-grinding 4
+adb shell am start -W -n $ACT --es open_tab report
+shot 10-report 5
+swipe_up
+shot 10b-report-scrolled 2
+adb shell am start -W -n $ACT --es open_tab report --es report_item 2
+shot 10c-report-item2 4
+adb shell am start -W -n $ACT --es open_tab report --es report_item 5
+shot 10d-report-item5 4
+swipe_up
+shot 10e-report-item5-scrolled 2
+adb shell am start -W -n $ACT --es open_tab links
+shot 11-links 3
 adb shell am start -W -n $ACT --es open_tab schedule --es event_date 2026-10-27
 shot 05-schedule-1027 3
 swipe_up

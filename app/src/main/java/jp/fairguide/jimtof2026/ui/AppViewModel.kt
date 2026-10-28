@@ -19,6 +19,11 @@ import jp.fairguide.jimtof2026.data.NoveltyNoteStore
 import jp.fairguide.jimtof2026.data.NoveltyRepository
 import jp.fairguide.jimtof2026.data.MyListStore
 import jp.fairguide.jimtof2026.data.ReminderStore
+import jp.fairguide.jimtof2026.data.ReportData
+import jp.fairguide.jimtof2026.data.ReportExtra
+import jp.fairguide.jimtof2026.data.ReportNoteStore
+import jp.fairguide.jimtof2026.data.ReportNotes
+import jp.fairguide.jimtof2026.data.ReportRepository
 import jp.fairguide.jimtof2026.logic.ExhibitorHit
 import jp.fairguide.jimtof2026.logic.ExhibitorIndex
 import jp.fairguide.jimtof2026.logic.FAIR_ZONE
@@ -42,6 +47,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val listStore = MyListStore(application)
     private val reminderStore = ReminderStore(application)
     private val noveltyNoteStore = NoveltyNoteStore(application)
+    private val reportNoteStore = ReportNoteStore(application)
 
     var tab by mutableStateOf(AppTab.OVERVIEW)
         private set
@@ -106,6 +112,85 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun selectTab(target: AppTab) {
         tab = target
         if (target == AppTab.VENUE) ensureExhibitors()
+        if (target == AppTab.REPORT) ensureReport()
+    }
+
+    // ---- 見学レポート ----
+
+    /** おすすめの会社と見どころ（report.json）。レポートタブを最初に開いたときに読む */
+    var reportData by mutableStateOf<ReportData?>(null)
+        private set
+
+    /** 会場で書いたメモ・まとめ・自分で足した会社（端末内だけに保存） */
+    var reportNotes by mutableStateOf(reportNoteStore.load())
+        private set
+
+    /** レポートタブで開いている項目 */
+    var reportItemId by mutableStateOf("1")
+        private set
+
+    private var loadingReport = false
+
+    fun ensureReport() {
+        if (reportData != null || loadingReport) return
+        loadingReport = true
+        viewModelScope.launch {
+            reportData = withContext(Dispatchers.Default) { ReportRepository.get(app) }
+            loadingReport = false
+        }
+    }
+
+    fun selectReportItem(id: String) {
+        reportItemId = id
+    }
+
+    private fun saveReportNotes(next: ReportNotes) {
+        reportNotes = next
+        reportNoteStore.save(next)
+    }
+
+    /** 会社ごとのメモ。null か空なら消す */
+    fun setReportNote(itemId: String, companyKey: String, note: String?) {
+        val k = ReportNotes.noteKey(itemId, companyKey)
+        val notes = reportNotes.notes.toMutableMap()
+        if (note.isNullOrBlank()) notes.remove(k) else notes[k] = note.trim()
+        saveReportNotes(reportNotes.copy(notes = notes))
+    }
+
+    fun setReportSummary(itemId: String, text: String) {
+        val s = reportNotes.summaries.toMutableMap()
+        if (text.isBlank()) s.remove(itemId) else s[itemId] = text
+        saveReportNotes(reportNotes.copy(summaries = s))
+    }
+
+    /** 検索結果などから、項目に会社を足す。すでにあれば false */
+    fun addReportCompany(itemId: String, exhibitor: Exhibitor): Boolean {
+        val booth = exhibitor.booths.first()
+        val key = NoveltyKey.of(exhibitor.name, booth)
+        val recommended = reportData?.item(itemId)?.companies?.any { it.key == key } == true
+        val exists = reportNotes.extras.any { it.itemId == itemId && it.key == key }
+        if (recommended || exists) return false
+        saveReportNotes(reportNotes.copy(extras = reportNotes.extras + ReportExtra(itemId, exhibitor.name, booth)))
+        return true
+    }
+
+    fun removeReportCompany(itemId: String, companyKey: String) {
+        val notes = reportNotes.notes.toMutableMap()
+        notes.remove(ReportNotes.noteKey(itemId, companyKey))
+        saveReportNotes(
+            reportNotes.copy(
+                notes = notes,
+                extras = reportNotes.extras.filterNot { it.itemId == itemId && it.key == companyKey },
+            ),
+        )
+    }
+
+    /** 検索タブを、その項目の候補（ReportPreset）で開く */
+    fun openSearchWithPreset(preset: ReportPreset?) {
+        resetSearch()
+        if (preset != null) selectReportPreset(preset)
+        tab = AppTab.VENUE
+        ensureExhibitors()
     }
 
     fun ensureExhibitors() {
@@ -232,6 +317,15 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 createdAt = now,
             ),
         )
+        return true
+    }
+
+    /** 出展社データを読む前でも、社名と小間番号だけでブースリストに入れる */
+    fun addToMyListByName(company: String, booth: String): Boolean {
+        val exists = myList.any { it.company == company && it.booth.equals(booth, ignoreCase = true) }
+        if (exists) return false
+        val now = System.currentTimeMillis()
+        saveItem(BoothItem(id = now, company = company, booth = booth, memo = "", visited = false, createdAt = now))
         return true
     }
 

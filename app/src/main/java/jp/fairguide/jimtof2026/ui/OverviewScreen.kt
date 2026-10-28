@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -57,6 +58,7 @@ import jp.fairguide.jimtof2026.ui.components.BulletText
 import jp.fairguide.jimtof2026.ui.components.Caption
 import jp.fairguide.jimtof2026.ui.components.GuideCard
 import jp.fairguide.jimtof2026.ui.components.LabeledRow
+import jp.fairguide.jimtof2026.ui.components.ListRow
 import jp.fairguide.jimtof2026.ui.components.SectionHeader
 import jp.fairguide.jimtof2026.ui.components.placeColorForPlaceName
 import jp.fairguide.jimtof2026.ui.theme.GuideTheme
@@ -69,6 +71,7 @@ fun OverviewScreen(
     now: ZonedDateTime,
     onOpenSchedule: () -> Unit,
     onOpenSearch: () -> Unit,
+    onOpenLinks: () -> Unit,
     onOpenUrl: (String) -> Unit,
 ) {
     val status = remember(now, data) { fairStatus(data.days, now) }
@@ -100,6 +103,17 @@ fun OverviewScreen(
         item {
             SectionHeader("来場者証と入場")
             GuideCard { data.visitorNotes.forEach { BulletText(it) } }
+        }
+        item {
+            SectionHeader("アクセス・公式リンク")
+            GuideCard(contentPadding = PaddingValues(0.dp)) {
+                ListRow(
+                    title = "アクセス・公式リンクを開く",
+                    description = "交通アクセス、来場登録・マイページ、出展者検索、講演の公式ページ、問い合わせ先",
+                    icon = Icons.Filled.Info,
+                    onClick = onOpenLinks,
+                )
+            }
         }
         item {
             SectionHeader("開催データ")

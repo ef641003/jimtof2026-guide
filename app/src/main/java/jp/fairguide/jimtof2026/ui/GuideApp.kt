@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
@@ -37,12 +38,20 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 
-enum class AppTab(val key: String, val label: String, val title: String, val icon: ImageVector) {
+enum class AppTab(
+    val key: String,
+    val label: String,
+    val title: String,
+    val icon: ImageVector,
+    /** 下のタブバーに出すか（リンクは概要タブの中から開く） */
+    val inNavBar: Boolean = true,
+) {
     OVERVIEW("overview", "概要", "会期・入場", Icons.Filled.Home),
     VENUE("halls", "検索", "出展社をさがす・会場マップ", Icons.Filled.Search),
     SCHEDULE("schedule", "予定", "講演・ワークショップ", Icons.Filled.DateRange),
     MY_LIST("mylist", "ブース", "回りたいブース", Icons.Filled.Star),
-    LINKS("links", "リンク", "アクセス・公式リンク", Icons.Filled.Info);
+    REPORT("report", "レポート", "見学レポート（11/5 提出）", Icons.Filled.Create),
+    LINKS("links", "リンク", "アクセス・公式リンク", Icons.Filled.Info, inNavBar = false);
 
     companion object {
         fun fromKey(key: String?): AppTab? = entries.firstOrNull { it.key == key }
@@ -86,7 +95,7 @@ fun GuideApp(vm: AppViewModel) {
         },
         bottomBar = {
             NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
-                AppTab.entries.forEach { item ->
+                AppTab.entries.filter { it.inNavBar }.forEach { item ->
                     NavigationBarItem(
                         selected = vm.tab == item,
                         onClick = { vm.selectTab(item) },
@@ -114,11 +123,13 @@ fun GuideApp(vm: AppViewModel) {
                     now = vm.now,
                     onOpenSchedule = { vm.selectTab(AppTab.SCHEDULE) },
                     onOpenSearch = { vm.selectTab(AppTab.VENUE) },
+                    onOpenLinks = { vm.selectTab(AppTab.LINKS) },
                     onOpenUrl = openUrl,
                 )
                 AppTab.VENUE -> VenueScreen(vm = vm, snackbarHostState = snackbarHostState, onOpenUrl = openUrl)
                 AppTab.SCHEDULE -> ScheduleScreen(vm = vm, snackbarHostState = snackbarHostState)
                 AppTab.MY_LIST -> MyListScreen(vm = vm, onOpenSearch = { vm.selectTab(AppTab.VENUE) })
+                AppTab.REPORT -> ReportScreen(vm = vm, snackbarHostState = snackbarHostState, onOpenUrl = openUrl)
                 AppTab.LINKS -> LinksScreen(data = vm.data, onOpenUrl = openUrl)
             }
         }

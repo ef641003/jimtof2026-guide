@@ -111,6 +111,7 @@ fun VenueScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenUr
     val searching = vm.searchQuery.isNotBlank() || vm.noveltyOnly || vm.reportPreset != null
     val index = vm.exhibitorIndex
     var noteTarget by remember { mutableStateOf<Exhibitor?>(null) }
+    var reportTarget by remember { mutableStateOf<Exhibitor?>(null) }
     val noveltyCount = remember(index, vm.noveltyData, vm.userNovelty) {
         index?.data?.exhibitors?.count { vm.hasNovelty(it) }
     }
@@ -119,6 +120,10 @@ fun VenueScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenUr
         noteOf = vm::noveltyNoteOf,
         sources = vm.noveltyData?.sources.orEmpty(),
         onEdit = { noteTarget = it },
+        onAddToReport = {
+            vm.ensureReport()
+            reportTarget = it
+        },
     )
 
     LazyColumn(
@@ -271,6 +276,24 @@ fun VenueScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenUr
         }
     }
 
+    reportTarget?.let { target ->
+        ReportPickDialog(
+            exhibitor = target,
+            items = vm.reportData?.items?.map { it.id to it.short }
+                ?: listOf("1" to "①競合", "2" to "②省人化・無人化", "5" to "⑤展示方法"),
+            onPick = { itemId ->
+                val added = vm.addReportCompany(itemId, target)
+                reportTarget = null
+                scope.launch {
+                    snackbarHostState.showSnackbar(
+                        if (added) "レポートの項目に追加しました（レポートタブで見られます）" else "すでにその項目にあります",
+                    )
+                }
+            },
+            onDismiss = { reportTarget = null },
+        )
+    }
+
     noteTarget?.let { target ->
         NoveltyNoteDialog(
             exhibitor = target,
@@ -294,7 +317,33 @@ private class NoveltyUi(
     val noteOf: (Exhibitor) -> String?,
     val sources: Map<String, NoveltySource>,
     val onEdit: (Exhibitor) -> Unit,
+    /** 見学レポートの項目に足す */
+    val onAddToReport: (Exhibitor) -> Unit,
 )
+
+/** どのレポート項目に足すかを選ぶ */
+@Composable
+private fun ReportPickDialog(
+    exhibitor: Exhibitor,
+    items: List<Pair<String, String>>,
+    onPick: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("レポートの項目に追加") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(exhibitor.name, style = MaterialTheme.typography.bodyMedium)
+                items.forEach { (id, label) ->
+                    FilledTonalButton(onClick = { onPick(id) }, modifier = Modifier.fillMaxWidth()) { Text(label) }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("閉じる") } },
+    )
+}
 
 @Composable
 private fun NoveltyNoteDialog(
@@ -568,6 +617,7 @@ private fun ExhibitorCard(
             TextButton(onClick = { novelty.onEdit(ex) }) {
                 Text(if (noveltyNote != null) "ノベルティのメモを編集" else "ノベルティを記録")
             }
+            TextButton(onClick = { novelty.onAddToReport(ex) }) { Text("レポートに追加") }
             location?.let { loc ->
                 val hallId = hallIdFor(loc.hallId)
                 TextButton(onClick = { onShowOnMap(hallId) }) { Text("地図で見る") }

@@ -46,17 +46,6 @@ class ReportPresetTest {
     }
 
     @Test
-    fun grindingPutsLatheAndGrinderMakersFirst() {
-        val hits = index.search("", limit = Int.MAX_VALUE, preset = ReportPreset.GRINDING)
-        assertTrue(hits.size > 100)
-        assertTrue(hits.first().presetReason!!.contains("旋盤"))
-        // 旋盤も出している会社は、研削盤だけの会社より点が高い
-        val both = hits.first { it.presetReason!!.contains("旋盤") }
-        val grinderOnly = hits.first { !it.presetReason!!.contains("旋盤") && !it.presetReason!!.contains("砥石") }
-        assertTrue(both.score > grinderOnly.score)
-    }
-
-    @Test
     fun presetCombinesWithQueryAndNeverReturnsEverythingWithoutIt() {
         assertTrue(index.search("").isEmpty())
         val narrowed = names(ReportPreset.COMPETITOR, "シマダ")

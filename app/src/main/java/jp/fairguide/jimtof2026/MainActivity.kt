@@ -55,6 +55,10 @@ class MainActivity : ComponentActivity() {
             viewModel.resetSearch()
             viewModel.toggleNoveltyOnly(true)
         }
+        intent?.getStringExtra(EXTRA_REPORT_ITEM)?.let { id ->
+            viewModel.selectTab(AppTab.REPORT)
+            viewModel.selectReportItem(id)
+        }
         intent?.getStringExtra(EXTRA_PRESET)?.let { name ->
             ReportPreset.entries.firstOrNull { it.name == name }?.let { preset ->
                 viewModel.selectTab(AppTab.VENUE)
@@ -70,5 +74,6 @@ class MainActivity : ComponentActivity() {
         const val EXTRA_SEARCH = "search_query"
         const val EXTRA_NOVELTY = "novelty_only"
         const val EXTRA_PRESET = "report_preset"
+        const val EXTRA_REPORT_ITEM = "report_item"
     }
 }
