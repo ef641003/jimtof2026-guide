@@ -84,7 +84,8 @@ object RoutePlanner {
         }
         if (settings.includeMyList) {
             for (b in myList) {
-                if (b.company.isBlank()) continue
+                // 小間番号の無い登録は回る順番に入れようがないので、ブースリストの側だけに置く
+                if (b.company.isBlank() || b.booth.isBlank()) continue
                 val s = get(b.company, b.booth)
                 s.fromMyList = true
             }
