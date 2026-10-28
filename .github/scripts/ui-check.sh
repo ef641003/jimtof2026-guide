@@ -54,6 +54,14 @@ swipe_up
 shot 10h-report-company3 2
 adb shell am start -W -n $ACT --es open_tab report --es report_item 2
 shot 10c-report-item2 4
+adb shell am start -W -n $ACT --es open_tab report --es report_item route
+shot 10r-report-route 5
+swipe_up
+shot 10s-report-route-2 2
+swipe_up
+shot 10t-report-route-3 2
+swipe_up
+shot 10u-report-route-4 2
 adb shell am start -W -n $ACT --es open_tab report --es report_item 5
 shot 10d-report-item5 4
 swipe_up

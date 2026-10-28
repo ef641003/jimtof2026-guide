@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Create
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
@@ -48,6 +49,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import jp.fairguide.jimtof2026.data.ReportData
 import jp.fairguide.jimtof2026.data.ReportItem
+import jp.fairguide.jimtof2026.data.ReportNotes
+import jp.fairguide.jimtof2026.data.RouteSettings
 import jp.fairguide.jimtof2026.logic.BoothCode
 import jp.fairguide.jimtof2026.logic.FAIR_ZONE
 import jp.fairguide.jimtof2026.logic.ReportDraft
@@ -95,6 +98,13 @@ fun ReportScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenU
         return
     }
 
+    if (vm.reportItemId == RouteSettings.ID) {
+        RouteScreen(vm = vm, data = data, snackbarHostState = snackbarHostState) {
+            ReportItemChips(data = data, notes = notes, selectedId = RouteSettings.ID, onSelect = { vm.selectReportItem(it) })
+        }
+        return
+    }
+
     val item = data.item(vm.reportItemId) ?: data.items.first()
     val rows = remember(data, item.id, notes.extras, byHall) {
         val base = ReportDraft.rows(data, item.id, notes)
@@ -110,16 +120,7 @@ fun ReportScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenU
     ) {
         item(key = "items") {
             Column {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    data.items.forEach { ri ->
-                        val count = notes.notes.keys.count { k -> k.startsWith(ri.id + "|") }
-                        FilterChip(
-                            selected = ri.id == item.id,
-                            onClick = { vm.selectReportItem(ri.id) },
-                            label = { Text(if (count > 0) "${ri.short}（$count）" else ri.short) },
-                        )
-                    }
-                }
+                ReportItemChips(data = data, notes = notes, selectedId = item.id, onSelect = { vm.selectReportItem(it) })
                 Row(modifier = Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     FilledTonalButton(
                         onClick = {
@@ -217,6 +218,28 @@ fun ReportScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenU
                 null
             },
             onDismiss = { noteTarget = null },
+        )
+    }
+}
+
+/** 項目（①②⑤）と「ルート」を切り替えるチップ。メモの数も添える */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun ReportItemChips(data: ReportData, notes: ReportNotes, selectedId: String, onSelect: (String) -> Unit) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        data.items.forEach { ri ->
+            val count = notes.notes.keys.count { k -> k.startsWith(ri.id + "|") }
+            FilterChip(
+                selected = ri.id == selectedId,
+                onClick = { onSelect(ri.id) },
+                label = { Text(if (count > 0) "${ri.short}（$count）" else ri.short) },
+            )
+        }
+        FilterChip(
+            selected = selectedId == RouteSettings.ID,
+            onClick = { onSelect(RouteSettings.ID) },
+            label = { Text("ルート") },
+            leadingIcon = { Icon(Icons.Filled.Place, contentDescription = null, modifier = Modifier.size(18.dp)) },
         )
     }
 }

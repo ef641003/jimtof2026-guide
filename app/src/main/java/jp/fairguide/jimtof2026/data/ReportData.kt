@@ -111,6 +111,27 @@ data class ReportExtra(val itemId: String, val name: String, val booth: String) 
     val key: String get() = NoveltyKey.of(name, booth)
 }
 
+/** 見学ルートの設定（レポートタブの「ルート」） */
+data class RouteSettings(
+    /** ルートに入れる項目 */
+    val itemIds: Set<String> = setOf("1", "2", "5"),
+    /** ブースリストの会社も入れる */
+    val includeMyList: Boolean = false,
+    /** ブースリストで訪問済みにした会社を外す */
+    val skipVisited: Boolean = true,
+    /** 出発地点（VenueWalk.Start の id） */
+    val start: String = "main",
+    /** 1社あたりの滞在の目安（分） */
+    val minutesPerStop: Int = 15,
+    /** 1日に回れる時間の目安（分） */
+    val minutesPerDay: Int = 300,
+) {
+    companion object {
+        /** レポートタブの項目チップで「ルート」を選んだときの id */
+        const val ID = "route"
+    }
+}
+
 /** 会場で書いたメモ。すべてこの端末の中だけに保存する（外部送信なし） */
 data class ReportNotes(
     /** "項目id|社名|小間" → メモ */
@@ -118,6 +139,9 @@ data class ReportNotes(
     /** 項目id → まとめ */
     val summaries: Map<String, String> = emptyMap(),
     val extras: List<ReportExtra> = emptyList(),
+    val route: RouteSettings = RouteSettings(),
+    /** ルートから外した会社（NoveltyKey） */
+    val routeSkips: Set<String> = emptySet(),
 ) {
     fun note(itemId: String, key: String): String? = notes[noteKey(itemId, key)]
 
@@ -140,7 +164,19 @@ class ReportNoteStore(context: Context) {
                 val e = ex.getJSONObject(i)
                 ReportExtra(e.getString("item"), e.getString("n"), e.getString("b"))
             }
-            ReportNotes(notes, summaries, extras)
+            val r = o.optJSONObject("route")
+            val defaults = RouteSettings()
+            val route = if (r == null) defaults else RouteSettings(
+                itemIds = r.optJSONArray("items")?.let { a -> (0 until a.length()).map { a.getString(it) }.toSet() } ?: defaults.itemIds,
+                includeMyList = r.optBoolean("myList", defaults.includeMyList),
+                skipVisited = r.optBoolean("skipVisited", defaults.skipVisited),
+                start = r.optString("start", defaults.start),
+                minutesPerStop = r.optInt("perStop", defaults.minutesPerStop),
+                minutesPerDay = r.optInt("perDay", defaults.minutesPerDay),
+            )
+            val sk = o.optJSONArray("skips")
+            val skips = if (sk == null) emptySet() else (0 until sk.length()).map { sk.getString(it) }.toSet()
+            ReportNotes(notes, summaries, extras, route, skips)
         }.getOrDefault(ReportNotes())
     }
 
@@ -153,9 +189,20 @@ class ReportNoteStore(context: Context) {
         data.extras.forEach { e ->
             extras.put(JSONObject().put("item", e.itemId).put("n", e.name).put("b", BoothCode.normalize(e.booth).ifEmpty { e.booth }))
         }
-        prefs.edit()
-            .putString(KEY, JSONObject().put("notes", notes).put("summaries", summaries).put("extras", extras).toString())
-            .apply()
+        val route = JSONObject()
+            .put("items", JSONArray(data.route.itemIds.sorted()))
+            .put("myList", data.route.includeMyList)
+            .put("skipVisited", data.route.skipVisited)
+            .put("start", data.route.start)
+            .put("perStop", data.route.minutesPerStop)
+            .put("perDay", data.route.minutesPerDay)
+        val root = JSONObject()
+            .put("notes", notes)
+            .put("summaries", summaries)
+            .put("extras", extras)
+            .put("route", route)
+            .put("skips", JSONArray(data.routeSkips.sorted()))
+        prefs.edit().putString(KEY, root.toString()).apply()
     }
 
     private companion object {

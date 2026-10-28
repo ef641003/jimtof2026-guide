@@ -20,7 +20,10 @@ import jp.fairguide.jimtof2026.data.NoveltyRepository
 import jp.fairguide.jimtof2026.data.MyListStore
 import jp.fairguide.jimtof2026.data.ReminderStore
 import jp.fairguide.jimtof2026.data.ReportData
+import jp.fairguide.jimtof2026.data.RouteSettings
+import jp.fairguide.jimtof2026.logic.RouteStop
 import jp.fairguide.jimtof2026.logic.BoothChecklist
+import jp.fairguide.jimtof2026.logic.BoothCode
 import jp.fairguide.jimtof2026.data.ReportExtra
 import jp.fairguide.jimtof2026.data.ReportNoteStore
 import jp.fairguide.jimtof2026.data.ReportNotes
@@ -184,6 +187,53 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 extras = reportNotes.extras.filterNot { it.itemId == itemId && it.key == companyKey },
             ),
         )
+    }
+
+    // ---- 見学ルート ----
+
+    fun updateRoute(transform: (RouteSettings) -> RouteSettings) {
+        saveReportNotes(reportNotes.copy(route = transform(reportNotes.route)))
+    }
+
+    fun toggleRouteItem(itemId: String) {
+        updateRoute { r ->
+            val ids = r.itemIds.toMutableSet()
+            if (!ids.remove(itemId)) ids += itemId
+            r.copy(itemIds = ids)
+        }
+    }
+
+    /** ルートから外す／戻す */
+    fun toggleRouteSkip(key: String) {
+        val skips = reportNotes.routeSkips.toMutableSet()
+        if (!skips.remove(key)) skips += key
+        saveReportNotes(reportNotes.copy(routeSkips = skips))
+    }
+
+    fun clearRouteSkips() {
+        saveReportNotes(reportNotes.copy(routeSkips = emptySet()))
+    }
+
+    /** ルートの順にブースリストへ入れる（登録順＝ルート順になる）。戻り値は新しく入れた数 */
+    fun addRouteToMyList(stops: List<RouteStop>): Int {
+        var added = 0
+        val list = myList.toMutableList()
+        var id = maxOf(System.currentTimeMillis(), (list.maxOfOrNull { it.id } ?: 0L) + 1)
+        for (s in stops) {
+            val exists = list.any { it.company == s.name && BoothCode.normalize(it.booth) == BoothCode.normalize(s.booth) }
+            if (exists) continue
+            list += BoothItem(
+                id = id, company = s.name, booth = s.booth, memo = "", visited = false, createdAt = id,
+                checks = BoothChecklist.merge(emptyList(), s.checks),
+            )
+            id++
+            added++
+        }
+        if (added > 0) {
+            myList = list
+            listStore.save(list)
+        }
+        return added
     }
 
     /** 検索タブを、その項目の候補（ReportPreset）で開く */
