@@ -303,7 +303,8 @@ private fun BoothRow(item: BoothItem, onToggle: () -> Unit, onToggleCheck: (Int)
         accent = if (item.visited) null else placeColorFor(location?.hallId).strong,
         contentPadding = PaddingValues(start = 0.dp, end = 12.dp, top = 6.dp, bottom = 6.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // 確かめることが並んでも、「訪問済み」のチェックは社名の横（上端）に置く
+        Row(verticalAlignment = Alignment.Top) {
             Checkbox(
                 checked = item.visited,
                 onCheckedChange = { onToggle() },
@@ -312,7 +313,7 @@ private fun BoothRow(item: BoothItem, onToggle: () -> Unit, onToggleCheck: (Int)
                     checkedColor = MaterialTheme.colorScheme.tertiary,
                 ),
             )
-            Column(Modifier.weight(1f)) {
+            Column(Modifier.weight(1f).padding(top = 12.dp)) {
                 Text(
                     text = item.company,
                     style = MaterialTheme.typography.titleSmall,
