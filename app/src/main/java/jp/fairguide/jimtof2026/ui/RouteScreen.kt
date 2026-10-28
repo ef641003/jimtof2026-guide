@@ -41,6 +41,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -62,6 +63,9 @@ import jp.fairguide.jimtof2026.ui.components.BoothBadge
 import jp.fairguide.jimtof2026.ui.components.BulletText
 import jp.fairguide.jimtof2026.ui.components.Caption
 import jp.fairguide.jimtof2026.ui.components.GuideCard
+import jp.fairguide.jimtof2026.ui.components.RouteDayPath
+import jp.fairguide.jimtof2026.ui.components.RouteLayout
+import jp.fairguide.jimtof2026.ui.components.RouteMap
 import jp.fairguide.jimtof2026.ui.components.SectionHeader
 import jp.fairguide.jimtof2026.ui.components.Tag
 import jp.fairguide.jimtof2026.ui.components.placeColorFor
@@ -93,6 +97,11 @@ fun RouteScreen(
     val plan = remember(stops, settings, notes.routeSkips) { RoutePlanner.plan(stops, settings, notes.routeSkips) }
     val status = remember(vm.now, vm.data) { fairStatus(vm.data.days, vm.now) }
     var expandedKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var settingsOpen by rememberSaveable { mutableStateOf(false) }
+    val dayColors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary, MaterialTheme.colorScheme.tertiary)
+    val dayPaths = remember(plan) { dayPathsOf(plan) }
+    // 一覧の先頭にある固定の項目（チップ・設定・まとめ・図）の数。ホールを押して一覧へ飛ぶときに使う
+    val fixedItems = 4 + if (plan.stops == 0) 1 else 0
 
     LazyColumn(
         state = listState,
@@ -103,7 +112,7 @@ fun RouteScreen(
         item(key = "items") { chips() }
 
         item(key = "settings") {
-            SettingsCard(data = data, settings = settings, vm = vm)
+            SettingsCard(data = data, settings = settings, vm = vm, open = settingsOpen, onToggle = { settingsOpen = !settingsOpen })
         }
 
         item(key = "summary") {
@@ -129,6 +138,19 @@ fun RouteScreen(
                         putExtra(Intent.EXTRA_TEXT, RoutePlanner.text(plan, data, settings, today))
                     }
                     context.startActivity(Intent.createChooser(send, "ルートを共有"))
+                },
+            )
+        }
+
+        item(key = "map") {
+            MapCard(
+                plan = plan,
+                dayPaths = dayPaths,
+                startId = settings.start,
+                dayColors = dayColors,
+                onSelectHall = { hallId ->
+                    val index = plan.entries.indexOfFirst { it is RouteEntry.Hall && it.hallId == hallId }
+                    if (index >= 0) scope.launch { listState.animateScrollToItem(fixedItems + index) }
                 },
             )
         }
@@ -211,11 +233,111 @@ fun RouteScreen(
     }
 }
 
+/** 日ごとの道順（出発地点 → ホールの順）。図に描くために使う */
+private fun dayPathsOf(plan: RoutePlan): List<RouteDayPath> {
+    val out = ArrayList<RouteDayPath>()
+    var day = 0
+    var halls = ArrayList<String>()
+    for (e in plan.entries) {
+        when (e) {
+            is RouteEntry.Day -> {
+                if (halls.isNotEmpty()) out += RouteDayPath(day, halls)
+                day = e.day
+                halls = ArrayList()
+            }
+            is RouteEntry.Hall -> halls += e.hallId
+            else -> Unit
+        }
+    }
+    if (halls.isNotEmpty()) out += RouteDayPath(day, halls)
+    return out
+}
+
+@Composable
+private fun MapCard(
+    plan: RoutePlan,
+    dayPaths: List<RouteDayPath>,
+    startId: String,
+    dayColors: List<Color>,
+    onSelectHall: (String) -> Unit,
+) {
+    Column {
+        SectionHeader("回り方の図（略図）")
+        GuideCard(contentPadding = PaddingValues(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 12.dp)) {
+            RouteMap(days = dayPaths, startId = startId, dayColors = dayColors, onSelectHall = onSelectHall)
+            if (dayPaths.isEmpty()) {
+                Text(
+                    text = "回る会社を選ぶと、順路を矢印で描きます",
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            dayPaths.forEachIndexed { i, dp ->
+                val color = dayColors[i % dayColors.size]
+                val dayEntry = plan.entries.firstOrNull { it is RouteEntry.Day && it.day == dp.day } as? RouteEntry.Day
+                val names = dp.hallIds.mapNotNull { id -> RouteLayout.zone(id)?.label?.replace("\n", "") }
+                Row(modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 6.dp), verticalAlignment = Alignment.Top) {
+                    Box(
+                        Modifier
+                            .padding(top = 4.dp)
+                            .size(12.dp)
+                            .background(color, CircleShape),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = buildString {
+                            if (plan.days > 1) append(dp.day).append("日目：")
+                            append(names.joinToString(" → "))
+                            if (dayEntry != null) append("（").append(dayEntry.stops).append("社・約").append(formatDuration(dayEntry.minutes.toLong())).append("）")
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+            Text(
+                text = "数字はその日に回るホールの順、矢印はホール間の移動です。ホールを押すと一覧のその場所へ飛びます。4F のホールは点線で、その棟の下に描いています。",
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SettingsCard(data: ReportData, settings: RouteSettings, vm: AppViewModel) {
+private fun SettingsCard(data: ReportData, settings: RouteSettings, vm: AppViewModel, open: Boolean, onToggle: () -> Unit) {
     GuideCard(accent = MaterialTheme.colorScheme.primary) {
-        Text("効率よく回るルート", style = MaterialTheme.typography.titleMedium)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("効率よく回るルート", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
+            TextButton(onClick = onToggle) { Text(if (open) "閉じる" else "設定を変える") }
+        }
+        if (!open) {
+            val items = data.items.filter { it.id in settings.itemIds }.joinToString("・") { it.short }
+            Text(
+                text = buildString {
+                    append(items.ifEmpty { "（項目なし）" })
+                    if (settings.includeMyList) append("＋ブースリスト")
+                    append("／").append(VenueWalk.Start.of(settings.start).label).append("から")
+                    append("／1社 約").append(settings.minutesPerStop).append("分")
+                    append("／1日 ").append(if (settings.minutesPerDay >= NO_SPLIT) "分けない" else "約" + formatDuration(settings.minutesPerDay.toLong()))
+                    if (settings.skipVisited) append("／訪問済みは外す")
+                },
+                modifier = Modifier.padding(top = 2.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            SettingsBody(data = data, settings = settings, vm = vm)
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SettingsBody(data: ReportData, settings: RouteSettings, vm: AppViewModel) {
+    Column {
         Text(
             text = "選んだ項目のおすすめの会社（自分で足した会社も含む）を、出発地点から歩く時間が短くなる順に並べます。" +
                 "ホールごとにまとめ、東⇔西のような長い移動を減らします。",

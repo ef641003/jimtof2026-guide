@@ -87,4 +87,67 @@ class ExhibitorSearchTest {
         assertEquals("株式会社岡本工作機械製作所", hits.first().exhibitor.name)
         assertTrue(index.search("存在しない会社名xyz").isEmpty())
     }
+
+    // ---- あいまい検索 ----
+
+    @Test
+    fun substringDistanceCountsEdits() {
+        assertEquals(0, ExhibitorIndex.substringDistance("まさく", "やまさきまさく", 2))
+        assertEquals(1, ExhibitorIndex.substringDistance("おおくま", "おくま", 2)) // 1文字余分
+        assertEquals(0, ExhibitorIndex.substringDistance("まきの", "まきのふらいす", 1))
+        assertEquals(1, ExhibitorIndex.substringDistance("まきお", "まきの", 1)) // 置換
+        assertEquals(1, ExhibitorIndex.substringDistance("まざか", "まかざ", 1)) // 隣の入れ替え
+        assertEquals(3, ExhibitorIndex.substringDistance("abcdef", "xyz", 2)) // k を超えたら k+1
+        assertEquals(0, ExhibitorIndex.substringDistance("", "abc", 1))
+        assertEquals(2, ExhibitorIndex.substringDistance("ab", "", 1))
+    }
+
+    @Test
+    fun loosenDropsDakutenAndSmallKana() {
+        assertEquals("やまさきまさつく", ExhibitorIndex.loosen(ExhibitorIndex.normalize("ヤマザキマザック")))
+        assertEquals("はなそにつく", ExhibitorIndex.loosen("ぱなそにっく"))
+        assertEquals("mazak", ExhibitorIndex.loosen("mazak"))
+        assertEquals(-1, ExhibitorIndex.fuzzyLimitFor(2))
+        assertEquals(0, ExhibitorIndex.fuzzyLimitFor(3))
+        assertEquals(1, ExhibitorIndex.fuzzyLimitFor(5))
+        assertEquals(2, ExhibitorIndex.fuzzyLimitFor(8))
+        assertEquals(3, ExhibitorIndex.fuzzyLimitFor(12))
+    }
+
+    @Test
+    fun fuzzySearchFindsNearSpellings() {
+        // 濁点なし・小さい「ッ」なし
+        val a = index.search("やまさきまさく")
+        assertTrue(a.isNotEmpty())
+        assertEquals("ヤマザキマザック株式会社", a.first().exhibitor.name)
+        assertTrue(a.first().fuzzy)
+        // 「オオクマ」→ オークマ（長音の代わりに「オ」）
+        val b = index.search("オオクマ")
+        assertTrue(b.any { it.exhibitor.name == "オークマ株式会社" && it.fuzzy })
+        // 英語名の打ち間違い
+        val c = index.search("makimo")
+        assertTrue(c.any { it.exhibitor.name.contains("牧野フライス") && it.fuzzy })
+        // ぴったり合うものは fuzzy にならず、先に並ぶ
+        val d = index.search("マザック")
+        assertEquals("ヤマザキマザック株式会社", d.first().exhibitor.name)
+        assertTrue(d.none { it.fuzzy } || d.indexOfFirst { it.fuzzy } > d.indexOfLast { !it.fuzzy })
+    }
+
+    @Test
+    fun fuzzySearchStaysQuiet() {
+        // 小間番号・短い語はあいまい検索しない
+        assertTrue(index.search("E2019").none { it.fuzzy })
+        assertTrue(index.search("E9999").isEmpty())
+        assertTrue(index.search("ab").none { it.fuzzy })
+        // ぴったり合う会社が十分あれば、近い表記は混ぜない
+        val many = index.search("製作所")
+        assertTrue(many.size >= ExhibitorIndex.FUZZY_ONLY_IF_FEWER_THAN)
+        assertTrue(many.none { it.fuzzy })
+        // まったく違う語は何も出ない
+        assertTrue(index.search("ぞろぞろぞろぞろ").isEmpty())
+        // 複数語は全部に当たる会社だけ（近い表記を含めて）
+        val two = index.search("やまさき まざっく")
+        assertTrue(two.isNotEmpty())
+        assertTrue(two.all { it.exhibitor.name.contains("ヤマザキマザック") && it.fuzzy })
+    }
 }

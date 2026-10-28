@@ -487,8 +487,14 @@ private fun androidx.compose.foundation.lazy.LazyListScope.searchResults(
                 Spacer(Modifier.width(8.dp))
                 Text("出展社データを読み込んでいます…", style = MaterialTheme.typography.bodyMedium)
             } else {
+                val fuzzyCount = hits.count { it.fuzzy }
                 Text(
-                    text = if (hits.isEmpty()) "該当なし" else "${hits.size}件",
+                    text = when {
+                        hits.isEmpty() -> "該当なし"
+                        fuzzyCount == 0 -> "${hits.size}件"
+                        fuzzyCount == hits.size -> "近い表記 ${hits.size}件"
+                        else -> "${hits.size}件（近い表記 ${fuzzyCount}件）"
+                    },
                     style = MaterialTheme.typography.titleSmall,
                 )
                 Spacer(Modifier.width(8.dp))
@@ -518,6 +524,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.searchResults(
                         "会場でノベルティを見つけたら、会社のカードの「ノベルティを記録」で残せます。"
                 } else {
                     "社名の一部（例：森精機、mazak）、製品名（例：立旋盤、エンドミル）、小間番号（例：E2019）で探せます。" +
+                        "濁点や小さい文字の違い、数文字の打ち間違いなら「近い表記」として拾いますが、それでも見つからないときは別の言い方を試してください。" +
                         "共同出展・内部出展の会社は親会社の小間に出ています。"
                 },
             )
@@ -597,9 +604,16 @@ private fun ExhibitorCard(
                 color = MaterialTheme.colorScheme.secondary,
             )
         }
-        hit.matchedCategory?.let { matched ->
-            Row(modifier = Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                Tag("分類で一致：$matched", MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.onSurface)
+        if (hit.matchedCategory != null || hit.fuzzy) {
+            Row(
+                modifier = Modifier.padding(top = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                if (hit.fuzzy) Tag("近い表記", GuideTheme.colors.warn, bold = true)
+                hit.matchedCategory?.let { matched ->
+                    Tag("分類で一致：$matched", MaterialTheme.colorScheme.surfaceContainerHigh, MaterialTheme.colorScheme.onSurface)
+                }
             }
         }
         if (noveltyInfos.isNotEmpty() || noveltyNote != null) {

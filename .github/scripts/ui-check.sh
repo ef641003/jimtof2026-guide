@@ -34,6 +34,8 @@ adb shell am start -W -n $ACT --es search_query E2019
 shot 04d-search-booth 3
 adb shell am start -W -n $ACT --es search_query okuma
 shot 04e-search-okuma 3
+adb shell am start -W -n $ACT --es search_query makimo
+shot 04j-search-fuzzy 3
 adb shell am start -W -n $ACT --es novelty_only 1
 shot 04f-novelty-only 4
 swipe_up

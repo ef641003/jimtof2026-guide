@@ -13,12 +13,15 @@ data class ExhibitorHit(
     val matchedCategory: String?,
     /** 見学テーマ（ReportPreset）で候補に入った理由 */
     val presetReason: String? = null,
+    /** 検索語と少し表記が違う（濁点・小さい文字の違いや、数文字の打ち間違い）が、近いので出した */
+    val fuzzy: Boolean = false,
 )
 
 /**
  * 出展社の検索。社名（日本語・英語）、小間番号、出展製品分類、よく使う言い換えで探す。
  * 表記ゆれ（全角・半角、カタカナ・ひらがな、大文字・小文字、長音・中黒・空白）は吸収する。
  * 複数の語を空白で区切ると、すべての語に当てはまる会社だけを出す。
+ * ぴったり合う会社が少ないときは、濁点・小さい文字の違いや数文字の打ち間違いまで許した「近い表記」の会社も、下のほうに出す。
  */
 class ExhibitorIndex(val data: ExhibitorData, novelty: NoveltyData? = null) {
 
@@ -37,12 +40,25 @@ class ExhibitorIndex(val data: ExhibitorData, novelty: NoveltyData? = null) {
         val categoryText: List<Pair<String, String>>,
         /** ノベルティの品名（正規化済み）。「トート」「キーホルダー」などで探せる */
         val noveltyText: List<String>,
-    )
+    ) {
+        /** あいまい検索用（濁点・小さい文字をそろえた形） */
+        val looseCore: String = loosen(core)
+        val looseEn: String? = en?.let { loosen(it) }
+        val looseCategories: List<Pair<String, String>> = categoryText.map { (n, d) -> loosen(n) to d }
+    }
 
     /** 検索語1つぶん。言い換えは語ごとに先に解決しておく */
     private class Token(val raw: String, val norm: String, val synonymCodes: List<String>) {
         val latin: Boolean = norm.all { it in 'a'..'z' || it in '0'..'9' }
         val shortLatin: Boolean = latin && norm.length <= 2
+        val loose: String = loosen(norm)
+
+        /** あいまい検索で許す文字の違いの数。-1 なら、この語はあいまい検索をしない（小間番号・短い語など） */
+        val fuzzyLimit: Int = when {
+            norm.length < 3 || norm.all { it in '0'..'9' } -> -1
+            BOOTH_LIKE.matches(BoothCode.normalize(raw).lowercase()) || HALL_JP.matches(norm) -> -1
+            else -> fuzzyLimitFor(loose.length)
+        }
     }
 
     private val entries: List<Entry>
@@ -113,6 +129,7 @@ class ExhibitorIndex(val data: ExhibitorData, novelty: NoveltyData? = null) {
             var total = 0
             var matched: String? = null
             var ok = true
+            var fuzzy = false
             var presetReason: String? = null
             if (preset != null) {
                 val m = preset.evaluate(e.exhibitor, data.categories)
@@ -121,15 +138,22 @@ class ExhibitorIndex(val data: ExhibitorData, novelty: NoveltyData? = null) {
                 presetReason = m.reason
             }
             for (t in tokens) {
-                val (s, cat) = scoreToken(e, t)
+                var (s, cat) = scoreToken(e, t)
                 if (s == 0) {
-                    ok = false
-                    break
+                    // ぴったり合わなければ、近い表記で探す
+                    val f = fuzzyToken(e, t)
+                    if (f.first == 0) {
+                        ok = false
+                        break
+                    }
+                    s = f.first
+                    cat = f.second
+                    fuzzy = true
                 }
                 total += s
                 if (matched == null && cat != null) matched = cat
             }
-            if (ok) scored += e to ExhibitorHit(e.exhibitor, total, matched, presetReason)
+            if (ok) scored += e to ExhibitorHit(e.exhibitor, total, matched, presetReason, fuzzy)
         }
         // 点数が同じなら、会場を歩く順（東→西→南、小間番号順）。同じ小間では本体の出展者を先に
         scored.sortWith(
@@ -139,8 +163,31 @@ class ExhibitorIndex(val data: ExhibitorData, novelty: NoveltyData? = null) {
                 .thenBy { it.first.exhibitor.mark }
                 .thenBy { it.first.exhibitor.name },
         )
-        val hits = scored.map { it.second }
+        var hits = scored.map { it.second }
+        // ぴったり合う会社が十分あるなら、近い表記の会社は出さない（ノイズになる）
+        if (hits.count { !it.fuzzy } >= FUZZY_ONLY_IF_FEWER_THAN) hits = hits.filter { !it.fuzzy }
         return if (hits.size > limit) hits.subList(0, limit) else hits
+    }
+
+    /**
+     * 近い表記で1語ぶんの得点。0 なら不一致。ぴったり合う得点（35 以上）より必ず低くする。
+     * 1) 濁点・小さい文字をそろえると含まれる（「やまさき まさく」→ ヤマザキマザック）
+     * 2) 数文字の違い（置換・抜け・余分・隣どうしの入れ替え）で社名のどこかに合う
+     */
+    private fun fuzzyToken(e: Entry, token: Token): Pair<Int, String?> {
+        val k = token.fuzzyLimit
+        if (k < 0) return 0 to null
+        val t = token.loose
+        if (e.looseCore.contains(t) || e.looseEn?.contains(t) == true) return 30 to null
+        if (!token.latin || t.length >= 4) {
+            for ((norm, display) in e.looseCategories) {
+                if (norm.contains(t)) return 25 to display
+            }
+        }
+        if (k == 0) return 0 to null
+        var best = substringDistance(t, e.looseCore, k)
+        if (best > 1 && e.looseEn != null) best = minOf(best, substringDistance(t, e.looseEn, k))
+        return if (best <= k) (28 - 4 * best) to null else 0 to null
     }
 
     /**
@@ -212,8 +259,71 @@ class ExhibitorIndex(val data: ExhibitorData, novelty: NoveltyData? = null) {
             "(株式会社|有限会社|合同会社|合資会社|一般社団法人|公益社団法人|一般財団法人|公益財団法人|学校法人|国立研究開発法人)",
         )
 
+        /** ぴったり合う会社がこの数以上あれば、近い表記の会社は出さない */
+        const val FUZZY_ONLY_IF_FEWER_THAN = 10
+
         private fun isShortLatin(t: String): Boolean =
             t.length <= 2 && t.all { it in 'a'..'z' || it in '0'..'9' }
+
+        /** 語の長さ（ゆるい形）に応じて、あいまい検索で許す文字の違いの数。3文字は濁点・小さい文字の違いだけ */
+        fun fuzzyLimitFor(length: Int): Int = when {
+            length < 3 -> -1
+            length == 3 -> 0
+            length <= 5 -> 1
+            length <= 8 -> 2
+            else -> 3
+        }
+
+        private val LOOSE: Map<Char, Char> = buildMap {
+            fun pairs(from: String, to: String) = from.forEachIndexed { i, c -> put(c, to[i]) }
+            pairs("ぁぃぅぇぉっゃゅょゎゕゖ", "あいうえおつやゆよわかけ")
+            pairs("がぎぐげござじずぜぞだぢづでどばびぶべぼ", "かきくけこさしすせそたちつてとはひふへほ")
+            pairs("ぱぴぷぺぽ", "はひふへほ")
+            put('ゔ', 'う')
+            put('ゐ', 'い')
+            put('ゑ', 'え')
+        }
+
+        /** あいまい検索用に、小さい文字を大きく、濁点・半濁点を外す（normalize したあとの文字列に使う） */
+        fun loosen(normalized: String): String {
+            val sb = StringBuilder(normalized.length)
+            for (ch in normalized) sb.append(LOOSE[ch] ?: ch)
+            return sb.toString()
+        }
+
+        /**
+         * pattern が text のどこかの部分文字列と、何文字の違い（置換・抜け・余分・隣どうしの入れ替え）で合うか。
+         * 違いが k を超えると分かった時点で k+1 を返す。
+         */
+        fun substringDistance(pattern: String, text: String, k: Int): Int {
+            val m = pattern.length
+            val n = text.length
+            if (m == 0) return 0
+            if (n == 0) return minOf(m, k + 1)
+            var prev2 = IntArray(n + 1)
+            var prev = IntArray(n + 1) // 0行目は全部 0（部分文字列はどこから始まってもよい）
+            var cur = IntArray(n + 1)
+            for (i in 1..m) {
+                cur[0] = i
+                var rowMin = i
+                val pc = pattern[i - 1]
+                for (j in 1..n) {
+                    val tc = text[j - 1]
+                    var v = minOf(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + if (pc == tc) 0 else 1)
+                    if (i > 1 && j > 1 && pc == text[j - 2] && pattern[i - 2] == tc) v = minOf(v, prev2[j - 2] + 1)
+                    cur[j] = v
+                    if (v < rowMin) rowMin = v
+                }
+                if (rowMin > k) return k + 1
+                val t = prev2
+                prev2 = prev
+                prev = cur
+                cur = t
+            }
+            var best = prev[0]
+            for (j in 1..n) if (prev[j] < best) best = prev[j]
+            return best
+        }
 
         /** 検索キー用に表記をそろえる */
         fun normalize(input: String): String {
