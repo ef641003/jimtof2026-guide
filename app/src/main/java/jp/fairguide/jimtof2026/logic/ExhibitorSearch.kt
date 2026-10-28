@@ -21,7 +21,8 @@ data class ExhibitorHit(
  * 出展社の検索。社名（日本語・英語）、小間番号、出展製品分類、よく使う言い換えで探す。
  * 表記ゆれ（全角・半角、カタカナ・ひらがな、大文字・小文字、長音・中黒・空白）は吸収する。
  * 複数の語を空白で区切ると、すべての語に当てはまる会社だけを出す。
- * ぴったり合う会社が少ないときは、濁点・小さい文字の違いや数文字の打ち間違いまで許した「近い表記」の会社も、下のほうに出す。
+ * ぴったり合う会社が少ないときは、濁点・小さい文字の違いや数文字の打ち間違いまで許した「近い表記」の会社も、下のほうに出す
+ * （いちばん近い表記のものだけ）。
  */
 class ExhibitorIndex(val data: ExhibitorData, novelty: NoveltyData? = null) {
 
@@ -124,12 +125,14 @@ class ExhibitorIndex(val data: ExhibitorData, novelty: NoveltyData? = null) {
         }
         if (tokens.isEmpty() && filter == null && preset == null) return emptyList()
         val scored = ArrayList<Pair<Entry, ExhibitorHit>>()
+        val distances = HashMap<Exhibitor, Int>() // 近い表記で当てた会社 → いちばん大きい文字の違い
         for (e in entries) {
             if (filter != null && !filter(e.exhibitor)) continue
             var total = 0
             var matched: String? = null
             var ok = true
             var fuzzy = false
+            var fuzzyDistance = 0
             var presetReason: String? = null
             if (preset != null) {
                 val m = preset.evaluate(e.exhibitor, data.categories)
@@ -142,18 +145,22 @@ class ExhibitorIndex(val data: ExhibitorData, novelty: NoveltyData? = null) {
                 if (s == 0) {
                     // ぴったり合わなければ、近い表記で探す
                     val f = fuzzyToken(e, t)
-                    if (f.first == 0) {
+                    if (f == null) {
                         ok = false
                         break
                     }
-                    s = f.first
-                    cat = f.second
+                    s = f.score
+                    cat = f.category
                     fuzzy = true
+                    if (f.distance > fuzzyDistance) fuzzyDistance = f.distance
                 }
                 total += s
                 if (matched == null && cat != null) matched = cat
             }
-            if (ok) scored += e to ExhibitorHit(e.exhibitor, total, matched, presetReason, fuzzy)
+            if (ok) {
+                scored += e to ExhibitorHit(e.exhibitor, total, matched, presetReason, fuzzy)
+                if (fuzzy) distances[e.exhibitor] = fuzzyDistance
+            }
         }
         // 点数が同じなら、会場を歩く順（東→西→南、小間番号順）。同じ小間では本体の出展者を先に
         scored.sortWith(
@@ -164,30 +171,38 @@ class ExhibitorIndex(val data: ExhibitorData, novelty: NoveltyData? = null) {
                 .thenBy { it.first.exhibitor.name },
         )
         var hits = scored.map { it.second }
-        // ぴったり合う会社が十分あるなら、近い表記の会社は出さない（ノイズになる）
-        if (hits.count { !it.fuzzy } >= FUZZY_ONLY_IF_FEWER_THAN) hits = hits.filter { !it.fuzzy }
+        if (hits.count { !it.fuzzy } >= FUZZY_ONLY_IF_FEWER_THAN) {
+            // ぴったり合う会社が十分あるなら、近い表記の会社は出さない（ノイズになる）
+            hits = hits.filter { !it.fuzzy }
+        } else if (distances.isNotEmpty()) {
+            // 近い表記は、いちばん近いものだけ（1文字違いがあれば、2文字違いは出さない）
+            val closest = distances.values.min()
+            hits = hits.filter { !it.fuzzy || distances[it.exhibitor] == closest }
+        }
         return if (hits.size > limit) hits.subList(0, limit) else hits
     }
+
+    private class FuzzyMatch(val score: Int, val category: String?, val distance: Int)
 
     /**
      * 近い表記で1語ぶんの得点。0 なら不一致。ぴったり合う得点（35 以上）より必ず低くする。
      * 1) 濁点・小さい文字をそろえると含まれる（「やまさき まさく」→ ヤマザキマザック）
      * 2) 数文字の違い（置換・抜け・余分・隣どうしの入れ替え）で社名のどこかに合う
      */
-    private fun fuzzyToken(e: Entry, token: Token): Pair<Int, String?> {
+    private fun fuzzyToken(e: Entry, token: Token): FuzzyMatch? {
         val k = token.fuzzyLimit
-        if (k < 0) return 0 to null
+        if (k < 0) return null
         val t = token.loose
-        if (e.looseCore.contains(t) || e.looseEn?.contains(t) == true) return 30 to null
+        if (e.looseCore.contains(t) || e.looseEn?.contains(t) == true) return FuzzyMatch(30, null, 0)
         if (!token.latin || t.length >= 4) {
             for ((norm, display) in e.looseCategories) {
-                if (norm.contains(t)) return 25 to display
+                if (norm.contains(t)) return FuzzyMatch(25, display, 0)
             }
         }
-        if (k == 0) return 0 to null
+        if (k == 0) return null
         var best = substringDistance(t, e.looseCore, k)
         if (best > 1 && e.looseEn != null) best = minOf(best, substringDistance(t, e.looseEn, k))
-        return if (best <= k) (28 - 4 * best) to null else 0 to null
+        return if (best <= k) FuzzyMatch(28 - 4 * best, null, best) else null
     }
 
     /**
@@ -269,8 +284,8 @@ class ExhibitorIndex(val data: ExhibitorData, novelty: NoveltyData? = null) {
         fun fuzzyLimitFor(length: Int): Int = when {
             length < 3 -> -1
             length == 3 -> 0
-            length <= 5 -> 1
-            length <= 8 -> 2
+            length <= 6 -> 1
+            length <= 10 -> 2
             else -> 3
         }
 

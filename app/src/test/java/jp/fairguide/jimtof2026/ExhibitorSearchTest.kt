@@ -124,9 +124,12 @@ class ExhibitorSearchTest {
         // 「オオクマ」→ オークマ（長音の代わりに「オ」）
         val b = index.search("オオクマ")
         assertTrue(b.any { it.exhibitor.name == "オークマ株式会社" && it.fuzzy })
-        // 英語名の打ち間違い
+        // 英語名の打ち間違い。いちばん近い（1文字違い）会社だけが出る
         val c = index.search("makimo")
-        assertTrue(c.any { it.exhibitor.name.contains("牧野フライス") && it.fuzzy })
+        assertTrue(c.isNotEmpty() && c.size <= 5)
+        assertTrue(c.all { it.fuzzy })
+        assertEquals("株式会社牧野フライス製作所", c.first().exhibitor.name)
+        assertEquals(2, c.count { it.exhibitor.name.contains("牧野フライス") })
         // ぴったり合うものは fuzzy にならず、先に並ぶ
         val d = index.search("マザック")
         assertEquals("ヤマザキマザック株式会社", d.first().exhibitor.name)

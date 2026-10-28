@@ -230,7 +230,9 @@ fun RouteMap(
                 val c = center(id) ?: return@forEachIndexed
                 val n = visits.getOrDefault(id, 0)
                 visits[id] = n + 1
-                val pos = Offset(c.x + n * (radius * 2.1f), c.y)
+                // 別の日にも同じホールを回るときは丸を横にずらす（右端のホールは左へ）
+                val dir = if ((RouteLayout.zone(id)?.cx ?: 0f) > 0.75f) -1f else 1f
+                val pos = Offset(c.x + dir * n * (radius * 2.1f), c.y)
                 drawCircle(scheme.surface, radius + 2f, pos)
                 drawCircle(color, radius, pos)
                 val t = measurer.measure(
