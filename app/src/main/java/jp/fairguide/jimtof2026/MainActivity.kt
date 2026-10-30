@@ -63,6 +63,10 @@ class MainActivity : ComponentActivity() {
         intent?.getStringExtra(EXTRA_REPORT_ADD)?.let { id ->
             viewModel.addFirstReportCompanies(id, 2)
         }
+        // 画面の確認用：ルートの日数を決めて開く
+        intent?.getStringExtra(EXTRA_ROUTE_DAYS)?.toIntOrNull()?.let { d ->
+            viewModel.updateRoute { it.copy(days = d, minutesPerDay = 300) }
+        }
         intent?.getStringExtra(EXTRA_PRESET)?.let { name ->
             ReportPreset.entries.firstOrNull { it.name == name }?.let { preset ->
                 viewModel.selectTab(AppTab.VENUE)
@@ -80,5 +84,6 @@ class MainActivity : ComponentActivity() {
         const val EXTRA_PRESET = "report_preset"
         const val EXTRA_REPORT_ITEM = "report_item"
         const val EXTRA_REPORT_ADD = "report_add"
+        const val EXTRA_ROUTE_DAYS = "route_days"
     }
 }

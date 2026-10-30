@@ -64,6 +64,18 @@ swipe_up
 shot 10t-report-route-3 2
 swipe_up
 shot 10u-report-route-4 2
+adb shell am start -W -n $ACT --es open_tab report --es report_item route --es route_days 1
+shot 10v-route-days1 4
+swipe_up
+shot 10w-route-days1-2 2
+swipe_up
+swipe_up
+swipe_up
+swipe_up
+swipe_up
+swipe_up
+shot 10x-route-days1-dropped 2
+adb shell am start -W -n $ACT --es open_tab report --es report_item route --es route_days 0
 adb shell am start -W -n $ACT --es open_tab report --es report_item w3
 shot 10d-report-item5 4
 swipe_up
