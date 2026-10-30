@@ -1,0 +1,7 @@
+Starting: Intent { cmp=jp.fairguide.jimtof2026/.MainActivity }
+Status: ok
+LaunchState: COLD
+Activity: jp.fairguide.jimtof2026/.MainActivity
+TotalTime: 3294
+WaitTime: 3296
+Complete
