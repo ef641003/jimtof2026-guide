@@ -235,15 +235,19 @@ def main() -> int:
                 facts.append("出展製品分類（公式カタログ）：" + "・".join(cats[:6]) + ("…" if len(cats) > 6 else ""))
             src_ids = ["cat"]
             extra = facts_extra.get("companies", {}).get(f"{name}|{booth}")
-            if extra:
-                facts = facts[:1] + extra.get("facts", []) + facts[1:]
+            look = list(it["look"])
+            if extra and extra.get("facts"):
+                # JIMTOF2026 の出展内容が分かっている会社は、その要約を中心にする（分類の行は省く）
+                facts = facts[:1] + extra["facts"]
                 src_ids = extra.get("src", []) + src_ids
+                specific = extra.get("look") or []
+                look = (specific + [g for g in it["look"] if g not in specific])[:5]
             companies.append({
                 "n": name,
                 "b": booth,
                 "why": why,
                 "facts": facts,
-                "look": (extra or {}).get("look") or it["look"],
+                "look": look,
                 "src": src_ids,
             })
         items.append({
