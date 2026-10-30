@@ -20,6 +20,8 @@ data class RouteStop(
     val checks: List<String>,
     val fromMyList: Boolean,
     val visited: Boolean,
+    /** おすすめの順位（0 が1番目）。複数の項目に載っていれば、いちばん上の順位。ブースリストだけの会社は大きい値 */
+    val rank: Int = 0,
 ) {
     val key: String get() = NoveltyKey.of(name, booth)
     val hallId: String? get() = BoothCode.locate(booth)?.hallId
@@ -53,6 +55,10 @@ data class RoutePlan(
     /** 自分で外した会社 */
     val skipped: List<RouteStop>,
     val unknown: Int,
+    /** 日数を決めたとき、時間内に入らなかった会社（優先度の高い順） */
+    val dropped: List<RouteStop> = emptyList(),
+    /** 日数を決めたときの対象の会社数（入らなかった会社も含む） */
+    val candidates: Int = 0,
 )
 
 /** 見学レポートの項目に合わせて、歩く距離が短くなる順に回る順番と所要時間の目安を組み立てる */
@@ -75,8 +81,9 @@ object RoutePlanner {
         }
         for (item in data.items) {
             if (item.id !in settings.itemIds) continue
-            for (row in ReportDraft.rows(data, item.id, notes)) {
+            ReportDraft.rows(data, item.id, notes).forEachIndexed { index, row ->
                 val s = get(row.name, row.booth)
+                if (index < s.rank) s.rank = index
                 if (s.itemIds.add(item.id)) s.marks += item.mark
                 row.company?.let { c ->
                     s.whys[item.id] = c.why
@@ -90,6 +97,7 @@ object RoutePlanner {
                 if (b.company.isBlank() || b.booth.isBlank()) continue
                 val s = get(b.company, b.booth)
                 s.fromMyList = true
+                if (s.itemIds.isEmpty()) s.rank = MY_LIST_RANK
             }
         }
         return order.map { key ->
@@ -104,6 +112,7 @@ object RoutePlanner {
                 checks = s.checks,
                 fromMyList = s.fromMyList,
                 visited = mine?.visited == true,
+                rank = s.rank,
             )
         }
     }
@@ -114,7 +123,20 @@ object RoutePlanner {
         val whys = LinkedHashMap<String, String>()
         val checks = ArrayList<String>()
         var fromMyList = false
+        var rank = Int.MAX_VALUE
     }
+
+    /** ブースリストだけの会社の順位（おすすめの会社のあと） */
+    private const val MY_LIST_RANK = 1000
+
+    /**
+     * 日数が足りないときに先に入れる順。各項目のおすすめ1番目どうし→2番目どうし…と交互に入れ、
+     * 同じ順位なら複数の項目に載っている会社（1社で何項目も見られる）を先にする。
+     */
+    val PRIORITY: Comparator<RouteStop> = compareBy<RouteStop> { it.rank }
+        .thenByDescending { it.itemIds.size }
+        .thenBy { it.itemIds.firstOrNull() ?: "~" }
+        .thenBy { it.name }
 
     /** 滞在の目安（分） */
     fun stayMinutes(stop: RouteStop, settings: RouteSettings): Int =
@@ -126,6 +148,31 @@ object RoutePlanner {
         val active = all.filter { it.key !in skips && !(settings.skipVisited && it.visited) }
         val known = active.filter { VenueWalk.knows(it.hallId) }
         val unknown = active.filter { !VenueWalk.knows(it.hallId) }
+        if (settings.days <= 0) return layout(known, unknown, settings, skippedVisited, skipped)
+
+        // 日数が決まっているとき：優先度の高い会社から順に入れ、決めた日数に収まらなくなる会社は外す
+        // （外したあとも、短い時間で回れる会社は続けて入れていく）
+        val chosen = ArrayList<RouteStop>()
+        val dropped = ArrayList<RouteStop>()
+        for (s in known.sortedWith(PRIORITY)) {
+            chosen += s
+            if (layout(chosen, emptyList(), settings, 0, emptyList()).days > settings.days) {
+                chosen.removeAt(chosen.lastIndex)
+                dropped += s
+            }
+        }
+        return layout(chosen, unknown, settings, skippedVisited, skipped)
+            .copy(dropped = dropped, candidates = known.size + unknown.size)
+    }
+
+    /** 回る会社が決まったあと、ホールの順・日分け・時刻を組み立てる */
+    private fun layout(
+        known: List<RouteStop>,
+        unknown: List<RouteStop>,
+        settings: RouteSettings,
+        skippedVisited: Int,
+        skipped: List<RouteStop>,
+    ): RoutePlan {
 
         val start = VenueWalk.Start.of(settings.start)
         val byHall = known.groupBy { it.hallId!! }
@@ -214,6 +261,11 @@ object RoutePlanner {
         if (settings.includeMyList) sb.append("＋ブースリスト")
         sb.append("／出発：").append(VenueWalk.Start.of(settings.start).label)
         sb.append("／1社 約").append(settings.minutesPerStop).append("分\n")
+        if (settings.days > 0) {
+            sb.append("日数：").append(settings.days).append("日（1日 ")
+                .append(if (settings.minutesPerDay >= 100_000) "時間の上限なし" else "約" + formatDuration(settings.minutesPerDay.toLong()))
+                .append("）で ").append(plan.candidates).append("社中 ").append(plan.stops).append("社を回るプラン\n")
+        }
         sb.append("全 ").append(plan.stops).append("社・").append(plan.halls).append("ホール／約")
             .append(formatDuration(plan.totalMinutes.toLong())).append("（移動 約").append(plan.walkMinutes).append("分）\n")
         for (e in plan.entries) {
@@ -232,6 +284,15 @@ object RoutePlanner {
                     sb.append('\n')
                 }
                 is RouteEntry.Unknown -> sb.append(" ・").append(e.stop.code).append(' ').append(e.stop.name).append("（ホール不明）\n")
+            }
+        }
+        if (plan.dropped.isNotEmpty()) {
+            sb.append("\n◇ 時間内に入らなかった会社（").append(plan.dropped.size).append("社）\n")
+            plan.dropped.forEach { s ->
+                sb.append(" ・").append(s.code).append(' ').append(ReportDraft.shortName(s.name))
+                val marks = s.marks.joinToString("")
+                if (marks.isNotEmpty()) sb.append(' ').append(marks)
+                sb.append('\n')
             }
         }
         sb.append("※ 位置関係・所要時間は目安です。小間の場所は公式の小間割図で確認してください。")

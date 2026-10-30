@@ -83,9 +83,16 @@ object VenueWalk {
     /**
      * 出発地点から全ホールを1回ずつ回る、いちばん歩く時間の短い順番（戻ってこなくてよい）。
      * ホールは最大でも14なので、部分集合ごとの最短を全部計算して厳密に解く。
+     * 同じ出発地点・同じホールの組み合わせの答えは覚えておく（日数を決めたプランで何度も呼ぶため）。
      */
     fun order(start: Start, hallIds: Collection<String>): List<String> {
-        val ids = hallIds.filter { it in halls }.distinct()
+        val ids = hallIds.filter { it in halls }.distinct().sorted()
+        if (ids.size <= 1) return ids
+        val cacheKey = start.id + "|" + ids.joinToString(",")
+        return orderCache.getOrPut(cacheKey) { solve(start, ids) }
+    }
+
+    private fun solve(start: Start, ids: List<String>): List<String> {
         val n = ids.size
         if (n <= 1) return ids
         if (n > MAX_EXACT) return greedy(start, ids)
@@ -140,4 +147,6 @@ object VenueWalk {
     }
 
     private const val MAX_EXACT = 16
+
+    private val orderCache = java.util.concurrent.ConcurrentHashMap<String, List<String>>()
 }

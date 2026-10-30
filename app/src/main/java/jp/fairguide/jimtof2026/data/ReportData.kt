@@ -128,6 +128,8 @@ data class RouteSettings(
     val minutesPerStop: Int = 15,
     /** 1日に回れる時間の目安（分） */
     val minutesPerDay: Int = 300,
+    /** 回れる日数（0 なら決めない＝全部回るのに何日かかるかを出す） */
+    val days: Int = 0,
 ) {
     companion object {
         /** レポートタブの項目チップで「ルート」を選んだときの id */
@@ -176,6 +178,7 @@ class ReportNoteStore(context: Context) {
                 start = r.optString("start", defaults.start),
                 minutesPerStop = r.optInt("perStop", defaults.minutesPerStop),
                 minutesPerDay = r.optInt("perDay", defaults.minutesPerDay),
+                days = r.optInt("days", defaults.days),
             )
             val sk = o.optJSONArray("skips")
             val skips = if (sk == null) emptySet() else (0 until sk.length()).map { sk.getString(it) }.toSet()
@@ -199,6 +202,7 @@ class ReportNoteStore(context: Context) {
             .put("start", data.route.start)
             .put("perStop", data.route.minutesPerStop)
             .put("perDay", data.route.minutesPerDay)
+            .put("days", data.route.days)
         val root = JSONObject()
             .put("notes", notes)
             .put("summaries", summaries)

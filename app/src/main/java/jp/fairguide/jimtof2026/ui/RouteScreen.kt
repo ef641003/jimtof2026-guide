@@ -112,7 +112,7 @@ fun RouteScreen(
         item(key = "items") { chips() }
 
         item(key = "settings") {
-            SettingsCard(data = data, settings = settings, vm = vm, open = settingsOpen, onToggle = { settingsOpen = !settingsOpen })
+            SettingsCard(data = data, settings = settings, vm = vm, status = status, open = settingsOpen, onToggle = { settingsOpen = !settingsOpen })
         }
 
         item(key = "summary") {
@@ -197,6 +197,34 @@ fun RouteScreen(
                     },
                 )
                 is RouteEntry.Unknown -> UnknownCard(e.stop, onSkip = { vm.toggleRouteSkip(e.stop.key) })
+            }
+        }
+
+        if (plan.dropped.isNotEmpty()) {
+            item(key = "dropped-header") {
+                SectionHeader("時間内に入らなかった会社（${plan.dropped.size}）")
+            }
+            item(key = "dropped") {
+                GuideCard(contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)) {
+                    Text(
+                        text = "${settings.days}日に収めるため、優先度の低い会社から外しています。" +
+                            "日数・1日の時間を増やすか、1社あたりの時間を短くすると入ります。行きたい会社がここにあれば、" +
+                            "ほかの会社を「ルートから外す」と入れ替わります。",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    plan.dropped.forEach { s ->
+                        Row(modifier = Modifier.padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            BoothBadge(s.booth)
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = s.name + if (s.marks.isEmpty()) "" else "　" + s.marks.joinToString(""),
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -307,12 +335,20 @@ private fun MapCard(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun SettingsCard(data: ReportData, settings: RouteSettings, vm: AppViewModel, open: Boolean, onToggle: () -> Unit) {
+private fun SettingsCard(
+    data: ReportData,
+    settings: RouteSettings,
+    vm: AppViewModel,
+    status: FairStatus,
+    open: Boolean,
+    onToggle: () -> Unit,
+) {
     GuideCard(accent = MaterialTheme.colorScheme.primary) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("効率よく回るルート", modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
             TextButton(onClick = onToggle) { Text(if (open) "閉じる" else "設定を変える") }
         }
+        DaysChooser(settings = settings, vm = vm, status = status)
         if (!open) {
             val items = data.items.filter { it.id in settings.itemIds }.joinToString("・") { it.short }
             Text(
@@ -321,7 +357,7 @@ private fun SettingsCard(data: ReportData, settings: RouteSettings, vm: AppViewM
                     if (settings.includeMyList) append("＋ブースリスト")
                     append("／").append(VenueWalk.Start.of(settings.start).label).append("から")
                     append("／1社 約").append(settings.minutesPerStop).append("分")
-                    append("／1日 ").append(if (settings.minutesPerDay >= NO_SPLIT) "分けない" else "約" + formatDuration(settings.minutesPerDay.toLong()))
+                    append("／1日 ").append(if (settings.minutesPerDay >= NO_SPLIT) "上限なし" else "約" + formatDuration(settings.minutesPerDay.toLong()))
                     if (settings.skipVisited) append("／訪問済みは外す")
                 },
                 modifier = Modifier.padding(top = 2.dp),
@@ -391,7 +427,7 @@ private fun SettingsBody(data: ReportData, settings: RouteSettings, vm: AppViewM
 
         SettingLabel("1日に回れる時間")
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf(180 to "3時間", 300 to "5時間", 420 to "7時間", NO_SPLIT to "分けない").forEach { (m, label) ->
+            listOf(180 to "3時間", 300 to "5時間", 420 to "7時間", NO_SPLIT to "上限なし").forEach { (m, label) ->
                 FilterChip(
                     selected = settings.minutesPerDay == m,
                     onClick = { vm.updateRoute { it.copy(minutesPerDay = m) } },
@@ -402,7 +438,55 @@ private fun SettingsBody(data: ReportData, settings: RouteSettings, vm: AppViewM
     }
 }
 
-/** 「分けない」のときの1日の持ち時間（会期中に収まらない大きさ） */
+/** 回れる日数の選択。「今日の残り時間」は開場中だけ出す */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DaysChooser(settings: RouteSettings, vm: AppViewModel, status: FairStatus) {
+    SettingLabel("回れる日数")
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        val todayLeft = (status as? FairStatus.Open)?.minutesToClose?.toInt()?.let { it / 10 * 10 }
+        if (todayLeft != null && todayLeft >= 30) {
+            FilterChip(
+                selected = settings.days == 1 && settings.minutesPerDay == todayLeft,
+                onClick = { vm.updateRoute { it.copy(days = 1, minutesPerDay = todayLeft) } },
+                label = { Text("今日の残り（${formatDuration(todayLeft.toLong())}）") },
+            )
+        }
+        listOf(1, 2, 3).forEach { d ->
+            FilterChip(
+                selected = settings.days == d && !(d == 1 && settings.minutesPerDay == todayLeft),
+                onClick = {
+                    vm.updateRoute {
+                        // 今日の残り時間から切り替えたときは、1日の時間を標準の5時間に戻す
+                        val perDay = if (it.minutesPerDay in DAY_CHOICES) it.minutesPerDay else 300
+                        it.copy(days = d, minutesPerDay = perDay)
+                    }
+                },
+                label = { Text("${d}日") },
+            )
+        }
+        FilterChip(
+            selected = settings.days <= 0,
+            onClick = { vm.updateRoute { it.copy(days = 0, minutesPerDay = if (it.minutesPerDay in DAY_CHOICES) it.minutesPerDay else 300) } },
+            label = { Text("決めない（全部回る）") },
+        )
+    }
+    Text(
+        text = if (settings.days > 0) {
+            "決めた日数に収まるよう、各テーマのおすすめ上位から交互に選びます（複数のテーマに載る会社を優先）。"
+        } else {
+            "全部回ると何日かかるかを出します。"
+        },
+        modifier = Modifier.padding(top = 4.dp),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+/** 1日に回れる時間の選択肢（分） */
+private val DAY_CHOICES = setOf(180, 300, 420, 100_000)
+
+/** 「上限なし」のときの1日の持ち時間（会期中に収まらない大きさ） */
 private const val NO_SPLIT = 100_000
 
 @Composable
@@ -426,9 +510,26 @@ private fun SummaryCard(
 ) {
     GuideCard {
         Text(
-            text = if (plan.stops == 0) "0社" else "全 ${plan.stops}社・${plan.halls}ホール",
+            text = when {
+                plan.stops == 0 -> "0社"
+                settings.days > 0 -> "${settings.days}日で ${plan.stops}社・${plan.halls}ホールを回るプラン"
+                else -> "全 ${plan.stops}社・${plan.halls}ホール"
+            },
             style = MaterialTheme.typography.titleMedium,
         )
+        if (settings.days > 0 && plan.candidates > 0) {
+            Text(
+                text = if (plan.dropped.isEmpty()) {
+                    "対象の ${plan.candidates}社すべてが入りました"
+                } else {
+                    "対象 ${plan.candidates}社のうち ${plan.dropped.size}社は時間内に入りません（下に一覧）"
+                },
+                modifier = Modifier.padding(top = 4.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = if (plan.dropped.isEmpty()) GuideTheme.colors.good.strong else GuideTheme.colors.warn.onContainer,
+            )
+        }
         if (plan.stops > 0) {
             Text(
                 text = "約${formatDuration(plan.totalMinutes.toLong())}（うち移動 約${plan.walkMinutes}分、1社 約${settings.minutesPerStop}分として）",
@@ -438,7 +539,7 @@ private fun SummaryCard(
         }
         if (plan.days > 1) {
             Text(
-                text = "1日 約${formatDuration(settings.minutesPerDay.toLong())}として ${plan.days}日に分けています",
+                text = if (settings.minutesPerDay >= NO_SPLIT) "${plan.days}日に分けています" else "1日 約${formatDuration(settings.minutesPerDay.toLong())}として ${plan.days}日に分けています",
                 modifier = Modifier.padding(top = 4.dp),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.secondary,

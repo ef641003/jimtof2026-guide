@@ -259,4 +259,53 @@ class RoutePlannerTest {
         assertEquals("+1:05", RoutePlanner.elapsedLabel(65))
         assertEquals("+0:00", RoutePlanner.elapsedLabel(0))
     }
+
+    // ---- 日数を決めたプラン ----
+
+    @Test
+    fun daysLimitKeepsPlanWithinDaysAndDropsLowPriority() {
+        val notes = ReportNotes(route = RouteSettings(itemIds = setOf("w1", "w2", "w3"), minutesPerDay = 300, days = 1))
+        val stops = RoutePlanner.collect(report, notes, emptyList())
+        val plan = RoutePlanner.plan(stops, notes.route, emptySet())
+        assertEquals(1, plan.days)
+        assertTrue(plan.dropped.isNotEmpty())
+        assertEquals(stops.size, plan.candidates)
+        assertEquals(plan.candidates, plan.stops + plan.dropped.size)
+        plan.entries.filterIsInstance<RouteEntry.Day>().forEach { assertTrue("${it.minutes}", it.minutes <= 300) }
+        // 各テーマのおすすめ1番目は必ず入る
+        val kept = stopsOf(plan.entries).map { it.stop.key }.toSet()
+        report.items.forEach { item -> assertTrue(item.id, item.companies.first().key in kept) }
+        // 外した会社は、入れた会社より優先度が低い（入れた会社の最上位より上の会社は外していない）
+        val keptRanks = stopsOf(plan.entries).map { it.stop.rank }
+        assertTrue(plan.dropped.all { d -> d.rank >= keptRanks.min() })
+        // 日数を増やすと入る会社が増え、決めないと全部入る
+        val two = RoutePlanner.plan(stops, notes.route.copy(days = 2), emptySet())
+        assertTrue(two.days <= 2)
+        assertTrue(two.stops > plan.stops)
+        val all = RoutePlanner.plan(stops, notes.route.copy(days = 0), emptySet())
+        assertEquals(stops.size, all.stops)
+        assertTrue(all.dropped.isEmpty())
+    }
+
+    @Test
+    fun priorityAlternatesThemesAndPrefersCompaniesInSeveralThemes() {
+        val a1 = stop("a1", "W1001", listOf("w1")).copy(rank = 0)
+        val a2 = stop("a2", "W1002", listOf("w1")).copy(rank = 1)
+        val b1 = stop("b1", "W2001", listOf("w2")).copy(rank = 0)
+        val both = stop("both", "W1003", listOf("w1", "w2")).copy(rank = 1)
+        val mine = stop("mine", "S1001", emptyList()).copy(rank = 1000)
+        val order = listOf(mine, a2, both, b1, a1).sortedWith(RoutePlanner.PRIORITY).map { it.name }
+        assertEquals(listOf("a1", "b1", "both", "a2", "mine"), order)
+    }
+
+    @Test
+    fun shareTextShowsDaysAndDroppedCompanies() {
+        val notes = ReportNotes(route = RouteSettings(itemIds = setOf("w1", "w2", "w3"), minutesPerDay = 180, days = 1))
+        val stops = RoutePlanner.collect(report, notes, emptyList())
+        val plan = RoutePlanner.plan(stops, notes.route, emptySet())
+        val text = RoutePlanner.text(plan, report, notes.route, "2026/10/30")
+        assertTrue(text.contains("日数：1日（1日 約3時間）で ${plan.candidates}社中 ${plan.stops}社を回るプラン"))
+        assertTrue(text.contains("◇ 時間内に入らなかった会社（${plan.dropped.size}社）"))
+        plan.dropped.forEach { assertTrue(it.name, text.contains(it.code + " ")) }
+    }
 }
