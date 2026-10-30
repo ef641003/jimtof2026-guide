@@ -5,9 +5,11 @@ import jp.fairguide.jimtof2026.logic.BoothCode
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** 見学レポートの項目（①競合、②省人化・無人化、⑤展示方法） */
+/** 見学レポートの項目（西展示棟担当：①切削工具、②保持具、③測定機器） */
 data class ReportItem(
     val id: String,
+    /** 見出しの印（①②③）。下書きやルートの行に添える */
+    val mark: String,
     val short: String,
     val title: String,
     /** 検索タブの「見学レポート用の候補」と対応する ReportPreset の名前（無ければ null） */
@@ -59,6 +61,7 @@ object ReportParser {
             val cs = o.getJSONArray("companies")
             ReportItem(
                 id = o.getString("id"),
+                mark = o.optString("mark", o.getString("id")),
                 short = o.getString("short"),
                 title = o.getString("title"),
                 presetName = if (o.isNull("preset")) null else o.getString("preset"),
@@ -114,13 +117,13 @@ data class ReportExtra(val itemId: String, val name: String, val booth: String) 
 /** 見学ルートの設定（レポートタブの「ルート」） */
 data class RouteSettings(
     /** ルートに入れる項目 */
-    val itemIds: Set<String> = setOf("1", "2", "5"),
+    val itemIds: Set<String> = setOf("w1", "w2", "w3"),
     /** ブースリストの会社も入れる */
     val includeMyList: Boolean = false,
     /** ブースリストで訪問済みにした会社を外す */
     val skipVisited: Boolean = true,
-    /** 出発地点（VenueWalk.Start の id） */
-    val start: String = "main",
+    /** 出発地点（VenueWalk.Start の id）。担当の西展示棟から */
+    val start: String = "west",
     /** 1社あたりの滞在の目安（分） */
     val minutesPerStop: Int = 15,
     /** 1日に回れる時間の目安（分） */

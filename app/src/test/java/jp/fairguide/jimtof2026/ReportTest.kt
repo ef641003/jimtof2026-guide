@@ -27,7 +27,8 @@ class ReportTest {
     @Test
     fun everyRecommendedCompanyMatchesAnExhibitor() {
         val keys = exhibitors.exhibitors.map { NoveltyKey.of(it) }.toSet()
-        assertEquals(listOf("1", "2", "5"), report.items.map { it.id })
+        assertEquals(listOf("w1", "w2", "w3"), report.items.map { it.id })
+        assertEquals(listOf("①", "②", "③"), report.items.map { it.mark })
         report.items.forEach { item ->
             assertTrue(item.id, item.companies.size >= 10)
             assertTrue(item.guide.isNotEmpty() && item.intro.isNotBlank())
@@ -48,37 +49,37 @@ class ReportTest {
     @Test
     fun rowsAppendUserAddedCompaniesAndOrderByHall() {
         val item = report.items.first()
-        val extra = ReportExtra("1", "オークマ株式会社", "E3028") // すでにおすすめにある → 重複しない
-        val extra2 = ReportExtra("1", "株式会社ツガミ", "S1004")
-        val notes = ReportNotes(extras = listOf(extra, extra2, ReportExtra("2", "株式会社ツガミ", "S1004")))
-        val rows = ReportDraft.rows(report, "1", notes)
+        val extra = ReportExtra("w1", "三菱マテリアル株式会社", "W1065") // すでにおすすめにある → 重複しない
+        val extra2 = ReportExtra("w1", "株式会社ツガミ", "S1004")
+        val notes = ReportNotes(extras = listOf(extra, extra2, ReportExtra("w2", "株式会社ツガミ", "S1004")))
+        val rows = ReportDraft.rows(report, "w1", notes)
         assertEquals(item.companies.size + 1, rows.size)
         assertEquals("株式会社ツガミ", rows.last().name)
         assertNotNull(rows.last().extra)
         val byHall = ReportDraft.rowsByHall(rows).map { it.booth }
-        assertTrue(byHall.indexOf("E1001") < byHall.indexOf("W2014"))
-        assertTrue(byHall.indexOf("W2014") < byHall.indexOf("S1004"))
+        assertTrue(byHall.indexOf("W1065") < byHall.indexOf("W3042"))
+        assertTrue(byHall.indexOf("W3042") < byHall.indexOf("S1004"))
     }
 
     @Test
     fun draftListsOnlyCompaniesWithNotesAndMarksEmptyItems() {
-        val mazak = report.items.first().companies.first { it.booth == "E1001" }
+        val mmc = report.items.first().companies.first { it.booth == "W1065" }
         val notes = ReportNotes(
             notes = mapOf(
-                ReportNotes.noteKey("1", mazak.key) to "MEGA TURN 900M は建機向けと説明\n付加機能は歯車",
-                ReportNotes.noteKey("2", mazak.key) to "",
+                ReportNotes.noteKey("w1", mmc.key) to "新材種は耐熱合金向けと説明\n工具IDの管理アプリ",
+                ReportNotes.noteKey("w2", mmc.key) to "",
             ),
-            summaries = mapOf("5" to "定時デモが有効"),
+            summaries = mapOf("w3" to "機上計測の提案が多い"),
         )
-        val text = ReportDraft.text(report, notes, "2026/10/28")
-        assertTrue(text.startsWith("JIMTOF2026 見学レポート 下書き（2026/10/28 書き出し）"))
+        val text = ReportDraft.text(report, notes, "2026/10/30")
+        assertTrue(text.startsWith("JIMTOF2026 見学レポート 下書き（2026/10/30 書き出し）"))
         assertTrue(text.contains("提出期限：2026/11/05"))
-        assertTrue(text.contains("1．競合各社の重点業界、展示内容、付加機能の提案動向"))
-        assertTrue(text.contains("・ヤマザキマザック（E1001）：MEGA TURN 900M は建機向けと説明\n　付加機能は歯車"))
-        // 空のメモの項目②は未記入、項目⑤はまとめだけ
-        assertTrue(text.contains("2．出展メーカーの省人化・無人化仕様の提案動向\n（未記入）"))
-        assertTrue(text.contains("［まとめ］定時デモが有効"))
-        assertFalse(text.contains("オークマ")) // メモの無い会社は出さない
+        assertTrue(text.contains("① 切削工具（チップ・エンドミル・タップなど）の展示動向"))
+        assertTrue(text.contains("・三菱マテリアル（W1065）：新材種は耐熱合金向けと説明\n　工具IDの管理アプリ"))
+        // 空のメモの項目②は未記入、項目③はまとめだけ
+        assertTrue(text.contains("② 保持具（チャック・ホルダー）の展示動向\n（未記入）"))
+        assertTrue(text.contains("［まとめ］機上計測の提案が多い"))
+        assertFalse(text.contains("タンガロイ")) // メモの無い会社は出さない
         assertEquals("ヤマザキマザック", ReportDraft.shortName("ヤマザキマザック株式会社"))
         assertEquals("EMAG GmbH & Co. KG", ReportDraft.shortName("EMAG GmbH & Co. KG"))
     }

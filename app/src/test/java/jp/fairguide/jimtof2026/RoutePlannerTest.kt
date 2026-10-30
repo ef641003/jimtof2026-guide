@@ -24,8 +24,8 @@ class RoutePlannerTest {
         ReportParser.parse(File("src/main/assets/report.json").readText(Charsets.UTF_8))
     }
 
-    private fun stop(name: String, booth: String, items: List<String> = listOf("1"), visited: Boolean = false) =
-        RouteStop(name, booth, items, items.associateWith { "理由" }, listOf("確かめる"), fromMyList = false, visited = visited)
+    private fun stop(name: String, booth: String, items: List<String> = listOf("w1"), visited: Boolean = false) =
+        RouteStop(name, booth, items, items.map { "[$it]" }, items.associateWith { "理由" }, listOf("確かめる"), fromMyList = false, visited = visited)
 
     private fun stopsOf(plan: List<RouteEntry>) = plan.filterIsInstance<RouteEntry.Stop>()
 
@@ -99,11 +99,11 @@ class RoutePlannerTest {
     @Test
     fun collectMergesCompaniesAcrossItemsAndAddsExtrasAndMyList() {
         // ①だけに載っている会社を、②にも自分で足した
-        val a = report.item("1")!!.companies.first { c -> report.items.count { it.companies.any { x -> x.key == c.key } } == 1 }
-        val extra = ReportExtra("2", a.name, a.booth)
+        val a = report.item("w1")!!.companies.first { c -> report.items.count { it.companies.any { x -> x.key == c.key } } == 1 }
+        val extra = ReportExtra("w2", a.name, a.booth)
         val notes = ReportNotes(
-            extras = listOf(extra, ReportExtra("5", "株式会社テスト", "W1001")),
-            route = RouteSettings(itemIds = setOf("1", "2", "5"), includeMyList = true),
+            extras = listOf(extra, ReportExtra("w3", "株式会社テスト", "W1001")),
+            route = RouteSettings(itemIds = setOf("w1", "w2", "w3"), includeMyList = true),
         )
         val myList = listOf(
             BoothItem(1, a.name, a.booth, "", visited = true, createdAt = 1),
@@ -114,12 +114,13 @@ class RoutePlannerTest {
         val keys = stops.map { it.key }
         assertEquals(keys.size, keys.toSet().size)
         val first = stops.first { it.name == a.name }
-        assertEquals(listOf("1", "2"), first.itemIds)
+        assertEquals(listOf("w1", "w2"), first.itemIds)
+        assertEquals(listOf("①", "②"), first.marks)
         assertTrue(first.visited)
-        assertEquals(a.why, first.whys["1"])
+        assertEquals(a.why, first.whys["w1"])
         assertTrue(a.look.all { it in first.checks })
         val test = stops.first { it.name == "株式会社テスト" }
-        assertEquals(listOf("5"), test.itemIds)
+        assertEquals(listOf("w3"), test.itemIds)
         assertTrue(test.whys.isEmpty())
         val mine = stops.first { it.name == "マイリストだけの会社" }
         assertTrue(mine.fromMyList && mine.itemIds.isEmpty())
@@ -128,8 +129,8 @@ class RoutePlannerTest {
         val without = RoutePlanner.collect(report, notes.copy(route = notes.route.copy(includeMyList = false)), myList)
         assertTrue(without.none { it.name == "マイリストだけの会社" })
         // 項目①だけなら、①の会社の数と同じ
-        val only1 = RoutePlanner.collect(report, ReportNotes(route = RouteSettings(itemIds = setOf("1"))), emptyList())
-        assertEquals(report.item("1")!!.companies.size, only1.size)
+        val only1 = RoutePlanner.collect(report, ReportNotes(route = RouteSettings(itemIds = setOf("w1"))), emptyList())
+        assertEquals(report.item("w1")!!.companies.size, only1.size)
     }
 
     // ---- plan ----
@@ -221,7 +222,7 @@ class RoutePlannerTest {
 
     @Test
     fun realReportRouteCoversEveryRecommendedCompanyOnce() {
-        val notes = ReportNotes(route = RouteSettings(itemIds = setOf("1", "2", "5"), minutesPerDay = 300))
+        val notes = ReportNotes(route = RouteSettings(itemIds = setOf("w1", "w2", "w3"), minutesPerDay = 300))
         val stops = RoutePlanner.collect(report, notes, emptyList())
         val expected = report.items.flatMap { it.companies }.map { it.key }.toSet()
         assertEquals(expected, stops.map { it.key }.toSet())
@@ -236,12 +237,17 @@ class RoutePlannerTest {
 
     @Test
     fun shareTextListsEveryStopWithMarks() {
-        val notes = ReportNotes(route = RouteSettings(itemIds = setOf("1", "2"), minutesPerDay = 240, start = "east"))
+        // ①の先頭の会社を②にも足して、2つの項目に載る会社を作る
+        val first = report.item("w1")!!.companies.first()
+        val notes = ReportNotes(
+            extras = listOf(ReportExtra("w2", first.name, first.booth)),
+            route = RouteSettings(itemIds = setOf("w1", "w2"), minutesPerDay = 240, start = "east"),
+        )
         val stops = RoutePlanner.collect(report, notes, emptyList())
         val plan = RoutePlanner.plan(stops, notes.route, emptySet())
         val text = RoutePlanner.text(plan, report, notes.route, "2026/10/29")
         assertTrue(text.startsWith("JIMTOF2026 見学ルート（2026/10/29 作成）"))
-        assertTrue(text.contains("対象：①競合・②省人化・無人化／出発：東展示棟／1社 約15分"))
+        assertTrue(text.contains("対象：①切削工具・②保持具／出発：東展示棟／1社 約15分"))
         assertTrue(text.contains("■ 1日目"))
         assertTrue(text.contains("▼ "))
         stopsOf(plan.entries).forEach { e ->
@@ -249,6 +255,7 @@ class RoutePlannerTest {
         }
         val both = stops.first { it.itemIds.size >= 2 }
         assertTrue(text.contains(both.code + " ") && text.contains(" ①②"))
+        assertTrue(text.contains(" ①②"))
         assertEquals("+1:05", RoutePlanner.elapsedLabel(65))
         assertEquals("+0:00", RoutePlanner.elapsedLabel(0))
     }

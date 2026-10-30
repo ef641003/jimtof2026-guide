@@ -72,6 +72,7 @@ fun OverviewScreen(
     onOpenSchedule: () -> Unit,
     onOpenSearch: () -> Unit,
     onOpenLinks: () -> Unit,
+    onOpenReport: () -> Unit,
     onOpenUrl: (String) -> Unit,
 ) {
     val status = remember(now, data) { fairStatus(data.days, now) }
@@ -86,6 +87,7 @@ fun OverviewScreen(
     ) {
         item { HeroCard(data.info, status, data.days.size) }
         item { QuickActions(status, onOpenSearch, onOpenSchedule) }
+        item { AssignmentCard(onOpenReport) }
         if (notices.isNotEmpty()) {
             item { NoticeCard(notices) }
         }
@@ -126,6 +128,38 @@ fun OverviewScreen(
             }
         }
         item { AboutText(data.info) }
+    }
+}
+
+/** 担当エリア（西展示棟）と、今年の会場での実際の場所 */
+@Composable
+private fun AssignmentCard(onOpenReport: () -> Unit) {
+    val west = GuideTheme.colors.west
+    Column {
+        SectionHeader("担当エリア：西展示棟")
+        GuideCard(accent = west.strong) {
+            Text("西展示棟（西1〜4ホール）", style = MaterialTheme.typography.titleMedium, color = west.strong)
+            Text(
+                text = "主に切削工具（チップ、エンドミル、タップなど）、保持具（チャック、ホルダー）、測定機器の展示エリア。" +
+                    "ほかの展示棟も確認してください。",
+                modifier = Modifier.padding(top = 6.dp),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = "今年の出展社カタログでは、切削工具の主要メーカーは西1ホール、保持具は西2ホールに集まっています。" +
+                    "測定機器の主要メーカー（ミツトヨ・東京精密・ニコン・レニショーなど）は東7ホールが中心で、キーエンスは南4です。",
+                modifier = Modifier.padding(top = 6.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            FilledTonalButton(
+                onClick = onOpenReport,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp)
+                    .height(48.dp),
+            ) { Text("テーマ別のおすすめ会社と回る順を見る") }
+        }
     }
 }
 

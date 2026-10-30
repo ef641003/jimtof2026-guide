@@ -10,8 +10,10 @@ import jp.fairguide.jimtof2026.data.RouteSettings
 data class RouteStop(
     val name: String,
     val booth: String,
-    /** 載っている項目（"1" "2" "5"）。ブースリストだけの会社は空 */
+    /** 載っている項目の id。ブースリストだけの会社は空 */
     val itemIds: List<String>,
+    /** 項目の印（①②③）。itemIds と同じ並び */
+    val marks: List<String>,
     /** 項目id → おすすめの理由 */
     val whys: Map<String, String>,
     /** ブースで確かめること（全項目ぶん、重複なし） */
@@ -75,7 +77,7 @@ object RoutePlanner {
             if (item.id !in settings.itemIds) continue
             for (row in ReportDraft.rows(data, item.id, notes)) {
                 val s = get(row.name, row.booth)
-                s.itemIds += item.id
+                if (s.itemIds.add(item.id)) s.marks += item.mark
                 row.company?.let { c ->
                     s.whys[item.id] = c.why
                     c.look.forEach { l -> if (l.isNotBlank() && s.checks.none { it == l.trim() }) s.checks += l.trim() }
@@ -97,6 +99,7 @@ object RoutePlanner {
                 name = s.name,
                 booth = s.booth,
                 itemIds = s.itemIds.toList(),
+                marks = s.marks.toList(),
                 whys = s.whys,
                 checks = s.checks,
                 fromMyList = s.fromMyList,
@@ -107,6 +110,7 @@ object RoutePlanner {
 
     private class MutableStop(val name: String, val booth: String) {
         val itemIds = LinkedHashSet<String>()
+        val marks = ArrayList<String>()
         val whys = LinkedHashMap<String, String>()
         val checks = ArrayList<String>()
         var fromMyList = false
@@ -222,7 +226,7 @@ object RoutePlanner {
                 is RouteEntry.Stop -> {
                     sb.append(' ').append(e.number).append(". ").append(elapsedLabel(e.arriveMinutes)).append(' ')
                         .append(e.stop.code).append(' ').append(ReportDraft.shortName(e.stop.name))
-                    val marks = e.stop.itemIds.joinToString("") { itemMark(it) }
+                    val marks = e.stop.marks.joinToString("")
                     if (marks.isNotEmpty()) sb.append(' ').append(marks)
                     if (e.stop.fromMyList && e.stop.itemIds.isEmpty()) sb.append(" ★")
                     sb.append('\n')
@@ -234,13 +238,4 @@ object RoutePlanner {
         return sb.toString()
     }
 
-    /** 項目 id → ①②⑤ */
-    fun itemMark(id: String): String = when (id) {
-        "1" -> "①"
-        "2" -> "②"
-        "3" -> "③"
-        "4" -> "④"
-        "5" -> "⑤"
-        else -> id
-    }
 }

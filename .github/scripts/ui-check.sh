@@ -40,10 +40,10 @@ adb shell am start -W -n $ACT --es novelty_only 1
 shot 04f-novelty-only 4
 swipe_up
 shot 04g-novelty-only-scrolled 2
-adb shell am start -W -n $ACT --es report_preset COMPETITOR
-shot 04h-preset-competitor 4
-adb shell am start -W -n $ACT --es report_preset AUTOMATION
-shot 04i-preset-automation 4
+adb shell am start -W -n $ACT --es report_preset CUTTING
+shot 04h-preset-cutting 4
+adb shell am start -W -n $ACT --es report_preset HOLDER
+shot 04i-preset-holder 4
 adb shell am start -W -n $ACT --es open_tab report
 shot 10-report 5
 swipe_up
@@ -54,7 +54,7 @@ swipe_up
 shot 10g-report-company2 2
 swipe_up
 shot 10h-report-company3 2
-adb shell am start -W -n $ACT --es open_tab report --es report_item 2
+adb shell am start -W -n $ACT --es open_tab report --es report_item w2
 shot 10c-report-item2 4
 adb shell am start -W -n $ACT --es open_tab report --es report_item route
 shot 10r-report-route 5
@@ -64,7 +64,7 @@ swipe_up
 shot 10t-report-route-3 2
 swipe_up
 shot 10u-report-route-4 2
-adb shell am start -W -n $ACT --es open_tab report --es report_item 5
+adb shell am start -W -n $ACT --es open_tab report --es report_item w3
 shot 10d-report-item5 4
 swipe_up
 shot 10e-report-item5-scrolled 2
@@ -76,7 +76,7 @@ swipe_up
 shot 05b-schedule-1027-scrolled 2
 adb shell am start -W -n $ACT --es open_tab mylist
 shot 06-mylist 3
-adb shell am start -W -n $ACT --es open_tab mylist --es report_add 1
+adb shell am start -W -n $ACT --es open_tab mylist --es report_add w1
 shot 06b-mylist-checklist 4
 swipe_up
 shot 06c-mylist-checklist2 2

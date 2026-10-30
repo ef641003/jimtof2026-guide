@@ -550,7 +550,7 @@ private fun StopCard(
             Column(Modifier.weight(1f)) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     BoothBadge(stop.booth)
-                    stop.itemIds.forEach { Tag(RoutePlanner.itemMark(it), MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer, bold = true) }
+                    stop.marks.forEach { Tag(it, MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.onPrimaryContainer, bold = true) }
                     if (stop.fromMyList && stop.itemIds.isEmpty()) Tag("ブースリスト", color, bold = false)
                     if (stop.visited) Tag("訪問済み", GuideTheme.colors.good, bold = true)
                 }
@@ -588,8 +588,9 @@ private fun StopCard(
         }
         if (expanded) {
             stop.whys.forEach { (id, why) ->
+                val mark = stop.marks.getOrNull(stop.itemIds.indexOf(id)) ?: id
                 Text(
-                    text = "${RoutePlanner.itemMark(id)} $why",
+                    text = "$mark $why",
                     modifier = Modifier.padding(top = 6.dp),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.secondary,

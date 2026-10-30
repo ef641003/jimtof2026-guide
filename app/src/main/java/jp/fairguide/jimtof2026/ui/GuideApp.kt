@@ -124,6 +124,7 @@ fun GuideApp(vm: AppViewModel) {
                     onOpenSchedule = { vm.selectTab(AppTab.SCHEDULE) },
                     onOpenSearch = { vm.selectTab(AppTab.VENUE) },
                     onOpenLinks = { vm.selectTab(AppTab.LINKS) },
+                    onOpenReport = { vm.selectTab(AppTab.REPORT) },
                     onOpenUrl = openUrl,
                 )
                 AppTab.VENUE -> VenueScreen(vm = vm, snackbarHostState = snackbarHostState, onOpenUrl = openUrl)

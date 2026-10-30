@@ -280,7 +280,7 @@ fun VenueScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenUr
         ReportPickDialog(
             exhibitor = target,
             items = vm.reportData?.items?.map { it.id to it.short }
-                ?: listOf("1" to "①競合", "2" to "②省人化・無人化", "5" to "⑤展示方法"),
+                ?: listOf("w1" to "①切削工具", "w2" to "②保持具", "w3" to "③測定機器"),
             onPick = { itemId ->
                 val added = vm.addReportCompany(itemId, target)
                 reportTarget = null

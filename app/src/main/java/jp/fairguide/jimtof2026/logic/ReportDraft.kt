@@ -33,7 +33,7 @@ object ReportDraft {
         sb.append("JIMTOF2026 見学レポート 下書き（").append(today).append(" 書き出し）\n")
         sb.append("提出期限：").append(data.deadline.replace('-', '/')).append('\n')
         for (item in data.items) {
-            sb.append('\n').append(item.id).append("．").append(item.title).append('\n')
+            sb.append('\n').append(item.mark).append(' ').append(item.title).append('\n')
             val rows = rowsByHall(rows(data, item.id, notes))
             var written = 0
             for (row in rows) {

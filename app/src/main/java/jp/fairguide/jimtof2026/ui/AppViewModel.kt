@@ -139,8 +139,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         if (reportData != null || loadingReport) return
         loadingReport = true
         viewModelScope.launch {
-            reportData = withContext(Dispatchers.Default) { ReportRepository.get(app) }
+            val data = withContext(Dispatchers.Default) { ReportRepository.get(app) }
+            reportData = data
             loadingReport = false
+            // 以前のビルドの項目 id が残っていて、どれも今の項目に無ければ全部の項目に戻す
+            val ids = data.items.map { it.id }.toSet()
+            if (reportNotes.route.itemIds.none { it in ids }) updateRoute { it.copy(itemIds = ids) }
         }
     }
 

@@ -252,7 +252,7 @@ private fun ItemHeadCard(
     onOpenSearch: (() -> Unit)?,
 ) {
     GuideCard(accent = MaterialTheme.colorScheme.primary) {
-        Text(text = "${item.id}．${item.title}", style = MaterialTheme.typography.titleMedium)
+        Text(text = "${item.mark} ${item.title}", style = MaterialTheme.typography.titleMedium)
         Text(
             text = item.intro,
             modifier = Modifier.padding(top = 6.dp),
