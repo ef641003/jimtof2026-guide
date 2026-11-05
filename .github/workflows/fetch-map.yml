@@ -1,0 +1,24 @@
+name: Fetch booth map (official)
+
+# 手動実行のみ。公式の小間割図から小間の位置を取り出し、main に commit する
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch and convert
+        run: python3 tools/fetch_booth_map.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add tools/raw/booth_map app/src/main/assets/booth_map.json
+          git diff --cached --quiet && exit 0
+          git commit -m "公式小間割図から小間の位置を取り込み [skip ci]"
+          git push
