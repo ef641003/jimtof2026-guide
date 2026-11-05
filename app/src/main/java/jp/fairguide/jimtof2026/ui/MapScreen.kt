@@ -145,7 +145,7 @@ fun MapScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenUrl:
                 itemFilter = vm.mapItemFilter,
                 itemColors = itemColors,
                 onSelectMap = { vm.selectMap(it) },
-                onSelectItem = { vm.setMapItemFilter(it) },
+                onSelectItem = { vm.filterMapItem(it) },
             )
         }
         val side: @Composable (Modifier) -> Unit = { modifier ->

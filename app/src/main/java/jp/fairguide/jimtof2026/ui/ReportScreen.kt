@@ -195,7 +195,7 @@ fun ReportScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenU
                     }
                 },
                 onShowOnMap = {
-                    vm.setMapItemFilter(null)
+                    vm.filterMapItem(null)
                     vm.showOnMap(row.booth)
                 },
                 onOpenUrl = onOpenUrl,

@@ -140,7 +140,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         mapFocusTick++
     }
 
-    fun setMapItemFilter(itemId: String?) {
+    fun filterMapItem(itemId: String?) {
         mapItemFilter = itemId
     }
 
