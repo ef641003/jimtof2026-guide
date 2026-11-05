@@ -18,8 +18,13 @@ BASE = "https://www.jimtof.org/map/jp/{m}_booth/{M}-BoothInfo.js"
 MAPS = ["e1-3", "e7-8", "w1-2", "w3-4", "s1-2", "s3-4"]
 PAGE = "https://www.jimtof.org/map/jp/{m}_booth/{m}.html?no={code}"
 
+# 1つの小間：polygon のあとに「== '小間番号'」の印。間に別の polygon をはさまない
 POLY = re.compile(
-    r"L\.polygon\((\[\[.*?\]\])\)?,\s*\{[^}]*\}\)[\s\S]*?get\('no'\)\s*==+\s*'([A-Z0-9]+)'\)\{L\.marker\(\[(-?\d+),(-?\d+)\]\)"
+    r"L\.polygon\((\[\[.*?\]\])\)?,\s*\{[^}]*\}\)(?:(?!L\.polygon)[\s\S])*?get\('no'\)\s*==+\s*'([A-Z0-9-]+)'\)\{L\.marker\(\[(-?\d+),(-?\d+)\]\)"
+)
+# パビリオン（複数社が1つの区画）：polygon のあとに ["E1009","E1009-1",...].includes(...)
+PAVILION = re.compile(
+    r"L\.polygon\((\[\[.*?\]\])\)?,\s*\{[^}]*\}\)(?:(?!L\.polygon)[\s\S])*?if\(\[([^\]]*)\]\.includes\(searchParams\.get\('no'\)\)\)\{L\.marker\(\[(-?\d+),(-?\d+)\]\)"
 )
 
 
@@ -42,24 +47,39 @@ def main() -> int:
     for m in MAPS:
         text = load(m, offline)
         booths = []
-        for poly, code, my, mx in POLY.findall(text):
+
+        def add(poly: str, code: str, my: str, mx: str, members=None):
             pts = json.loads(poly)
-            ys = [p[0] for p in pts]
-            xs = [p[1] for p in pts]
-            x1, y1, x2, y2 = min(xs), min(ys), max(xs), max(ys)
-            # y を下向き正にそろえ、1/8 にする
-            booths.append([
-                code,
-                round(x1 / 8), round(-y2 / 8), round((x2 - x1) / 8), round((y2 - y1) / 8),
-                round(int(mx) / 8), round(-int(my) / 8),
-            ])
+            # x はそのまま、y は下向き正に。どちらも 1/8
+            ps = [[round(p[1] / 8), round(-p[0] / 8)] for p in pts]
+            # 閉じるための最後の点（最初とほぼ同じ）は落とす
+            if len(ps) > 3 and abs(ps[0][0] - ps[-1][0]) <= 4 and abs(ps[0][1] - ps[-1][1]) <= 4:
+                ps = ps[:-1]
+            row = {"c": code, "p": [v for q in ps for v in q], "m": [round(int(mx) / 8), round(-int(my) / 8)]}
+            if members:
+                row["g"] = members
+            booths.append(row)
+
+        for poly, code, my, mx in POLY.findall(text):
+            add(poly, code, my, mx)
+        for poly, codes, my, mx in PAVILION.findall(text):
+            members = [c.strip().strip('"\'') for c in codes.split(",") if c.strip()]
+            add(poly, members[0], my, mx, members)
+        polys = text.count("L.polygon")
+        if polys != len(booths):
+            print(f"{m}: polygon {polys} に対して {len(booths)} しか取れません", file=sys.stderr)
+            return 1
+        codes_seen = [b["c"] for b in booths]
+        if len(codes_seen) != len(set(codes_seen)):
+            print(f"{m}: 小間番号が重複", file=sys.stderr)
+            return 1
         if not booths:
             print(f"{m}: 小間が取れません", file=sys.stderr)
             return 1
         total += len(booths)
         maps.append({"id": m, "page": PAGE.format(m=m, code="{code}"), "booths": booths})
         print(f"{m}: {len(booths)}")
-    OUT.write_text(json.dumps({"note": "公式小間割図の小間の位置（左上x, 左上y, 幅, 高さ, 印x, 印y）。1/8 縮尺", "maps": maps},
+    OUT.write_text(json.dumps({"note": "公式小間割図の小間の形（p: x,y の並び）と印の位置（m）。1/8 縮尺、y は下向き。g はパビリオンの小間番号", "maps": maps},
                               ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     print(f"total {total} -> {OUT}")
     return 0

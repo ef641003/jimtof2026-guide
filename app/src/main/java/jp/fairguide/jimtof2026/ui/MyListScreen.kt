@@ -1,5 +1,8 @@
 package jp.fairguide.jimtof2026.ui
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material.icons.filled.Place
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -120,6 +123,7 @@ fun MyListScreen(vm: AppViewModel, onOpenSearch: () -> Unit) {
     val context = LocalContext.current
     var showEditor by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<BoothItem?>(null) }
+    var addCheckTarget by remember { mutableStateOf<BoothItem?>(null) }
     var sortByHall by rememberSaveable { mutableStateOf(true) }
 
     val items = vm.myList
@@ -228,6 +232,8 @@ fun MyListScreen(vm: AppViewModel, onOpenSearch: () -> Unit) {
                         item = row.item,
                         onToggle = { vm.toggleVisited(row.item.id) },
                         onToggleCheck = { vm.toggleCheck(row.item.id, it) },
+                        onAddCheck = { addCheckTarget = row.item },
+                        onShowOnMap = { vm.showOnMap(row.item.booth) },
                         onClick = {
                             editing = row.item
                             showEditor = true
@@ -256,6 +262,18 @@ fun MyListScreen(vm: AppViewModel, onOpenSearch: () -> Unit) {
     }
 
     LaunchedEffect(showEditor) { if (showEditor) vm.ensureExhibitors() }
+    addCheckTarget?.let { target ->
+        AddCheckDialog(
+            item = target,
+            suggestions = (vm.reportChecksFor(target.company, target.booth) + BoothChecklist.STANDARD).distinct(),
+            onAdd = { list ->
+                list.forEach { vm.addCheck(target.id, it) }
+                addCheckTarget = null
+            },
+            onDismiss = { addCheckTarget = null },
+        )
+    }
+
     if (showEditor) {
         BoothEditorDialog(
             initial = editing,
@@ -295,7 +313,14 @@ private fun GroupHeader(label: String, hallId: String?) {
 }
 
 @Composable
-private fun BoothRow(item: BoothItem, onToggle: () -> Unit, onToggleCheck: (Int) -> Unit, onClick: () -> Unit) {
+private fun BoothRow(
+    item: BoothItem,
+    onToggle: () -> Unit,
+    onToggleCheck: (Int) -> Unit,
+    onAddCheck: () -> Unit,
+    onShowOnMap: () -> Unit,
+    onClick: () -> Unit,
+) {
     val location = remember(item.booth) { BoothCode.locate(item.booth) }
     val code = BoothCode.normalize(item.booth)
     GuideCard(
@@ -387,9 +412,82 @@ private fun BoothRow(item: BoothItem, onToggle: () -> Unit, onToggleCheck: (Int)
                         }
                     }
                 }
+                // その場で確かめることを足す・マップで場所を見る
+                Row(modifier = Modifier.padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                    if (!item.visited) {
+                        TextButton(onClick = onAddCheck) {
+                            Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("確かめることを足す")
+                        }
+                    }
+                    if (location != null) {
+                        TextButton(onClick = onShowOnMap) {
+                            Icon(Icons.Filled.Place, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("マップ")
+                        }
+                    }
+                }
             }
         }
     }
+}
+
+/** ブースリストのカードから、確かめることを足す（定番・レポートの確認事項から選ぶか、自分で書く） */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun AddCheckDialog(
+    item: BoothItem,
+    suggestions: List<String>,
+    onAdd: (List<String>) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var text by rememberSaveable { mutableStateOf("") }
+    var picked by remember { mutableStateOf(setOf<String>()) }
+    val left = suggestions.filter { s -> item.checks.none { it.text == s } }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("確かめることを足す") },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(item.company, style = MaterialTheme.typography.titleSmall)
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it.take(60) },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("確かめること（自分で書く）") },
+                    singleLine = true,
+                )
+                if (left.isNotEmpty()) {
+                    Text(
+                        "候補から選ぶ（いくつでも）",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        left.forEach { s ->
+                            FilterChip(
+                                selected = s in picked,
+                                onClick = { picked = if (s in picked) picked - s else picked + s },
+                                label = { Text(s) },
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onAdd(picked.toList() + listOf(text).filter { it.isNotBlank() }) },
+                enabled = text.isNotBlank() || picked.isNotEmpty(),
+            ) { Text("足す") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("やめる") } },
+    )
 }
 
 @Composable

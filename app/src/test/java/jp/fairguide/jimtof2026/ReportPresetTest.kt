@@ -22,6 +22,30 @@ class ReportPresetTest {
         index.search(query, limit = Int.MAX_VALUE, preset = preset).map { it.exhibitor.name }
 
     @Test
+    fun competitorsListVerticalLatheMakersButNotOurselves() {
+        val names = names(ReportPreset.COMPETITOR)
+        assertTrue(names.size in 40..120)
+        listOf("株式会社TAKISAWA", "新日本工機株式会社", "芝浦機械株式会社", "株式会社池貝").forEach {
+            assertTrue(it, it in names)
+        }
+        assertFalse(names.contains("株式会社オーエム製作所"))
+        // 専業に近い会社が上位に来る
+        val top = names.take(10)
+        assertTrue(top.contains("株式会社TAKISAWA") || top.contains("新日本工機株式会社"))
+    }
+
+    @Test
+    fun automationCoversSystemsAndNamedRobotCompanies() {
+        val hits = index.search("", limit = Int.MAX_VALUE, preset = ReportPreset.AUTOMATION)
+        val names = hits.map { it.exhibitor.name }
+        assertTrue(names.contains("ファナック株式会社"))
+        assertTrue(names.size > 60)
+        assertTrue(hits.all { !it.presetReason.isNullOrBlank() })
+        // 社名にロボット・自動化を含む会社が先頭グループ
+        assertTrue(hits.first().presetReason!!.contains("社名"))
+    }
+
+    @Test
     fun cuttingToolsListMajorMakersFirst() {
         val hits = index.search("", limit = Int.MAX_VALUE, preset = ReportPreset.CUTTING)
         val names = hits.map { it.exhibitor.name }

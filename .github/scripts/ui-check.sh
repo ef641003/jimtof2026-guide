@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # エミュレーターでアプリを起動し、各タブのスクリーンショットとクラッシュの有無を記録する
+# 折りたたみ（ふつうの幅）と、広げた画面（横幅 600dp 以上）の両方を撮る
 set -u
 OUT=ui-check
 PKG=jp.fairguide.jimtof2026
 ACT=$PKG/.MainActivity
 APK=app/build/outputs/apk/release/app-release.apk
 mkdir -p "$OUT"
+rm -f "$OUT"/*.png
 
 adb install -r "$APK" > "$OUT/install.txt" 2>&1
 adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS || true
@@ -16,89 +18,72 @@ echo "screen ${W}x${H}" > "$OUT/screen.txt"
 
 shot() { sleep "$2"; adb exec-out screencap -p > "$OUT/$1.png"; }
 swipe_up() { adb shell input swipe $((W / 2)) $((H * 3 / 4)) $((W / 2)) $((H / 4)) 400; }
+start() { adb shell am start -W -n $ACT "$@" > /dev/null 2>&1; }
 
-adb shell am start -W -n $ACT > "$OUT/start.txt" 2>&1
-shot 01-overview 6
-swipe_up
-shot 02-overview-scrolled 2
-swipe_up
-shot 03-overview-bottom 2
+# 初回：担当を選ぶ画面
+start
+shot 00-profile-chooser 6
 
-adb shell am start -W -n $ACT --es open_tab halls
-shot 04-halls 4
+# ---- 立旋盤メーカー視点 ----
+start --es profile maker --es open_tab report
+shot 10-report-maker 5
 swipe_up
-shot 04b-halls-scrolled 2
-adb shell am start -W -n $ACT --es search_query mazak
-shot 04c-search-mazak 4
-adb shell am start -W -n $ACT --es search_query E2019
-shot 04d-search-booth 3
-adb shell am start -W -n $ACT --es search_query okuma
-shot 04e-search-okuma 3
-adb shell am start -W -n $ACT --es search_query makimo
-shot 04j-search-fuzzy 3
-adb shell am start -W -n $ACT --es novelty_only 1
-shot 04f-novelty-only 4
+shot 10b-report-maker-scrolled 2
 swipe_up
-shot 04g-novelty-only-scrolled 2
-adb shell am start -W -n $ACT --es report_preset CUTTING
-shot 04h-preset-cutting 4
-adb shell am start -W -n $ACT --es report_preset HOLDER
-shot 04i-preset-holder 4
-adb shell am start -W -n $ACT --es open_tab report
-shot 10-report 5
+shot 10c-report-maker-company 2
+start --es map_booth E1001
+shot 20-map-maker-E1001 5
 swipe_up
-shot 10b-report-scrolled 2
+shot 20b-map-maker-list 2
+start --es open_tab map
+shot 21-map-maker 3
+
+# ---- 西展示棟担当 ----
+start --es profile west --es open_tab report
+shot 30-report-west 5
+start --es map_booth W1065
+shot 31-map-west-W1065 5
+start --es map_booth E7085
+shot 32-map-west-E7085 4
+start --es report_preset CUTTING
+shot 33-preset-cutting 4
+
+# 検索・予定・ブース・会期
+start --es search_query mazak
+shot 40-search-mazak 4
+start --es search_query makimo
+shot 41-search-fuzzy 3
+start --es open_tab schedule --es event_date 2026-10-27
+shot 50-schedule 3
+start --es open_tab mylist --es report_add w1
+shot 60-mylist-checklist 4
 swipe_up
-shot 10f-report-company 2
+shot 60b-mylist-checklist2 2
+start --es open_tab overview
+shot 70-overview 3
 swipe_up
-shot 10g-report-company2 2
-swipe_up
-shot 10h-report-company3 2
-adb shell am start -W -n $ACT --es open_tab report --es report_item w2
-shot 10c-report-item2 4
-adb shell am start -W -n $ACT --es open_tab report --es report_item route
-shot 10r-report-route 5
-swipe_up
-shot 10s-report-route-2 2
-swipe_up
-shot 10t-report-route-3 2
-swipe_up
-shot 10u-report-route-4 2
-adb shell am start -W -n $ACT --es open_tab report --es report_item route --es route_days 1
-shot 10v-route-days1 4
-swipe_up
-shot 10w-route-days1-2 2
-swipe_up
-swipe_up
-swipe_up
-swipe_up
-swipe_up
-swipe_up
-shot 10x-route-days1-dropped 2
-adb shell am start -W -n $ACT --es open_tab report --es report_item route --es route_days 0
-adb shell am start -W -n $ACT --es open_tab report --es report_item w3
-shot 10d-report-item5 4
-swipe_up
-shot 10e-report-item5-scrolled 2
-adb shell am start -W -n $ACT --es open_tab links
-shot 11-links 3
-adb shell am start -W -n $ACT --es open_tab schedule --es event_date 2026-10-27
-shot 05-schedule-1027 3
-swipe_up
-shot 05b-schedule-1027-scrolled 2
-adb shell am start -W -n $ACT --es open_tab mylist
-shot 06-mylist 3
-adb shell am start -W -n $ACT --es open_tab mylist --es report_add w1
-shot 06b-mylist-checklist 4
-swipe_up
-shot 06c-mylist-checklist2 2
-adb shell am start -W -n $ACT --es open_tab links
-shot 07-links 3
+shot 70b-overview-scrolled 2
+start --es open_tab report --es report_item route
+shot 80-route 5
+
+# ---- 広げた画面（フォルダブルの内側の画面に近い大きさ） ----
+adb shell wm size 1920x2160
+adb shell wm density 400
+sleep 3
+start --es open_tab map
+shot 90-wide-map 5
+start --es map_booth W2055
+shot 91-wide-map-W2055 5
+start --es open_tab report --es report_item w1
+shot 92-wide-report 4
+start --es open_tab mylist
+shot 93-wide-mylist 3
+adb shell wm size reset
+adb shell wm density reset
 
 adb shell cmd uimode night yes
-shot 08-links-dark 4
-adb shell am start -W -n $ACT --es open_tab overview
-shot 09-overview-dark 3
+start --es open_tab map
+shot 95-map-dark 4
 adb shell cmd uimode night no
 
 adb logcat -d > "$OUT/logcat.txt"

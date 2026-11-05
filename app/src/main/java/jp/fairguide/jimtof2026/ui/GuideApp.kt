@@ -17,10 +17,12 @@ import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -43,14 +45,15 @@ enum class AppTab(
     val label: String,
     val title: String,
     val icon: ImageVector,
-    /** 下のタブバーに出すか（リンクは概要タブの中から開く） */
+    /** 下のタブバーに出すか（会期・入場とリンクは右上の「i」から開く） */
     val inNavBar: Boolean = true,
 ) {
-    OVERVIEW("overview", "概要", "会期・入場", Icons.Filled.Home),
-    VENUE("halls", "検索", "出展社をさがす・会場マップ", Icons.Filled.Search),
-    SCHEDULE("schedule", "予定", "講演・ワークショップ", Icons.Filled.DateRange),
+    REPORT("report", "レポート", "見学レポート", Icons.Filled.Create),
+    MAP("map", "マップ", "会場マップ（小間の位置）", Icons.Filled.Place),
     MY_LIST("mylist", "ブース", "回りたいブース", Icons.Filled.Star),
-    REPORT("report", "レポート", "見学レポート（11/5 提出）", Icons.Filled.Create),
+    VENUE("halls", "検索", "出展社をさがす", Icons.Filled.Search),
+    SCHEDULE("schedule", "予定", "講演・ワークショップ", Icons.Filled.DateRange),
+    OVERVIEW("overview", "会期", "会期・入場・アクセス", Icons.Filled.Home, inNavBar = false),
     LINKS("links", "リンク", "アクセス・公式リンク", Icons.Filled.Info, inNavBar = false);
 
     companion object {
@@ -65,9 +68,17 @@ fun GuideApp(vm: AppViewModel) {
     val snackbarHostState = remember { SnackbarHostState() }
     val openUrl: (String) -> Unit = { url -> openLink(context, url) }
 
-    // 戻るボタンは、まず概要タブへ戻す
-    BackHandler(enabled = vm.tab != AppTab.OVERVIEW) {
-        vm.selectTab(AppTab.OVERVIEW)
+    // 戻るボタンは、まずレポートタブへ戻す（リンク画面からは会期・入場へ）
+    BackHandler(enabled = vm.tab != AppTab.REPORT) {
+        vm.selectTab(if (vm.tab == AppTab.LINKS) AppTab.OVERVIEW else AppTab.REPORT)
+    }
+
+    if (vm.choosingProfile) {
+        ProfileChooser(
+            current = vm.profile,
+            onChoose = { vm.chooseProfile(it) },
+            onDismiss = { vm.dismissProfileChooser() },
+        )
     }
 
     Scaffold(
@@ -85,10 +96,15 @@ fun GuideApp(vm: AppViewModel) {
                             fontWeight = FontWeight.Bold,
                         )
                         Text(
-                            text = "JIMTOF2026 非公式ガイド",
+                            text = "JIMTOF2026 非公式ガイド・" + vm.activeProfile.label,
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { vm.selectTab(AppTab.OVERVIEW) }) {
+                        Icon(Icons.Filled.Info, contentDescription = "会期・入場・アクセス")
                     }
                 },
             )
@@ -121,12 +137,14 @@ fun GuideApp(vm: AppViewModel) {
                 AppTab.OVERVIEW -> OverviewScreen(
                     data = vm.data,
                     now = vm.now,
+                    profile = vm.activeProfile,
+                    onChangeProfile = { vm.openProfileChooser() },
                     onOpenSchedule = { vm.selectTab(AppTab.SCHEDULE) },
                     onOpenSearch = { vm.selectTab(AppTab.VENUE) },
                     onOpenLinks = { vm.selectTab(AppTab.LINKS) },
-                    onOpenReport = { vm.selectTab(AppTab.REPORT) },
                     onOpenUrl = openUrl,
                 )
+                AppTab.MAP -> MapScreen(vm = vm, snackbarHostState = snackbarHostState, onOpenUrl = openUrl)
                 AppTab.VENUE -> VenueScreen(vm = vm, snackbarHostState = snackbarHostState, onOpenUrl = openUrl)
                 AppTab.SCHEDULE -> ScheduleScreen(vm = vm, snackbarHostState = snackbarHostState)
                 AppTab.MY_LIST -> MyListScreen(vm = vm, onOpenSearch = { vm.selectTab(AppTab.VENUE) })

@@ -7,8 +7,8 @@ import jp.fairguide.jimtof2026.data.ProductCategories
 class PresetMatch(val score: Int, val reason: String)
 
 /**
- * 見学テーマ（西展示棟担当：切削工具・保持具・測定機器）ごとに、見て回る候補の会社を絞り込むための設定。
- * 公式カタログに会社が自分で登録した「出展製品分類」だけが根拠なので、分類に出ない提案は拾えない。
+ * 見学テーマごとに、見て回る候補の会社を絞り込むための設定。どのテーマを出すかは担当（ViewerProfile）で決まる。
+ * 公式カタログに会社が自分で登録した「出展製品分類」（と一部は社名）だけが根拠なので、分類に出ない提案は拾えない。
  * 候補の入口として使い、実際の展示は会場で確かめる。
  */
 enum class ReportPreset(
@@ -16,7 +16,23 @@ enum class ReportPreset(
     val shortLabel: String,
     val description: String,
 ) {
-    /** 項目①：切削工具（チップ・エンドミル・タップなど） */
+    /** 立旋盤メーカー視点 項目①：競合各社の重点業界・展示内容・付加機能 */
+    COMPETITOR(
+        label = "①競合",
+        shortLabel = "競合",
+        description = "NC旋盤（立軸）・ターニングセンタ・融合機として出展を登録している会社です（自社は除く）。" +
+            "立旋盤の登録があり、登録分野が絞られている（専業に近い）会社ほど上に並べています。商社・代理店も混ざります。",
+    ),
+
+    /** 立旋盤メーカー視点 項目②：省人化・無人化仕様の提案動向 */
+    AUTOMATION(
+        label = "②省人化・無人化",
+        shortLabel = "省人化・無人化",
+        description = "生産管理・NC支援システム、自動工具交換、切屑処理、ツールプリセッタの出展者と、" +
+            "社名にロボット・自動化などを含む会社です。分類に出ない提案もあるので、候補の入口として使ってください。",
+    ),
+
+    /** 西展示棟担当 項目①：切削工具（チップ・エンドミル・タップなど） */
     CUTTING(
         label = "①切削工具",
         shortLabel = "切削工具",
@@ -41,9 +57,31 @@ enum class ReportPreset(
     );
 
     fun evaluate(ex: Exhibitor, cats: ProductCategories): PresetMatch? = when (this) {
+        COMPETITOR -> competitor(ex, cats)
+        AUTOMATION -> automation(ex, cats)
         CUTTING -> weighted(ex, cats, CUTTING_WEIGHTS)
         HOLDER -> weighted(ex, cats, HOLDER_WEIGHTS)
         MEASURING -> weighted(ex, cats, MEASURING_WEIGHTS)
+    }
+
+    private fun competitor(ex: Exhibitor, cats: ProductCategories): PresetMatch? {
+        // 自社（E2019）は競合に入れない
+        if (ex.booths.any { BoothCode.normalize(it) == OWN_BOOTH }) return null
+        val m = weighted(ex, cats, COMPETITOR_WEIGHTS) ?: return null
+        // 登録している分野が少ない会社（専業に近い）ほど上に。商社・代理店は分野が広いので下がる
+        val focus = maxOf(0, 60 - 4 * ex.codes.size)
+        return PresetMatch(m.score + focus, m.reason)
+    }
+
+    private fun automation(ex: Exhibitor, cats: ProductCategories): PresetMatch? {
+        val byCategory = weighted(ex, cats, AUTOMATION_WEIGHTS)
+        val byName = AUTOMATION_NAME.containsMatchIn(ex.name)
+        return when {
+            byName && byCategory != null ->
+                PresetMatch(byCategory.score + NAME_WEIGHT, "社名にロボット・自動化など／" + byCategory.reason)
+            byName -> PresetMatch(NAME_WEIGHT, "社名にロボット・自動化など")
+            else -> byCategory
+        }
     }
 
     private fun weighted(ex: Exhibitor, cats: ProductCategories, weights: Map<String, Int>): PresetMatch? {
@@ -58,6 +96,23 @@ enum class ReportPreset(
     }
 
     companion object {
+        /** 自社の小間（立旋盤メーカー視点で、競合から外す） */
+        const val OWN_BOOTH = "E2019"
+
+        private const val NAME_WEIGHT = 100
+
+        private val COMPETITOR_WEIGHTS = mapOf("s6" to 100, "s7" to 50, "s29" to 30)
+
+        private val AUTOMATION_WEIGHTS = mapOf(
+            "s261" to 40, // 生産管理システム
+            "s258" to 40, // NC支援システム
+            "s166" to 30, // 自動工具交換装置
+            "s168" to 30, // 切屑処理装置
+            "s167" to 20, // ツールプリセッタ
+        )
+
+        private val AUTOMATION_NAME = Regex("ロボ|オートメ|自動化|ハンドリング|搬送|ローダ|ファナック|安川|川崎重工|デンソー")
+
         private val CUTTING_WEIGHTS = mapOf(
             "s198" to 100, // 刃先交換工具
             "s201" to 80, // フライス、エンドミル（超硬）

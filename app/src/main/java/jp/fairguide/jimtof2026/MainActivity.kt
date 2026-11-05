@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import jp.fairguide.jimtof2026.notify.Notifications
 import jp.fairguide.jimtof2026.logic.ReportPreset
+import jp.fairguide.jimtof2026.data.ViewerProfile
 import jp.fairguide.jimtof2026.ui.AppTab
 import jp.fairguide.jimtof2026.ui.AppViewModel
 import jp.fairguide.jimtof2026.ui.GuideApp
@@ -42,6 +43,8 @@ class MainActivity : ComponentActivity() {
 
     /** 通知から開いたときは、その日の予定タブを表示する */
     private fun handleIntent(intent: Intent?) {
+        // 画面の確認用：担当を決めて起動する（選ぶ画面を出さない）
+        ViewerProfile.of(intent?.getStringExtra(EXTRA_PROFILE))?.let { viewModel.chooseProfile(it) }
         AppTab.fromKey(intent?.getStringExtra(EXTRA_OPEN_TAB))?.let { viewModel.selectTab(it) }
         intent?.getStringExtra(EXTRA_EVENT_DATE)?.let { viewModel.selectScheduleDate(it) }
         intent?.getStringExtra(EXTRA_SEARCH)?.let {
@@ -67,6 +70,8 @@ class MainActivity : ComponentActivity() {
         intent?.getStringExtra(EXTRA_ROUTE_DAYS)?.toIntOrNull()?.let { d ->
             viewModel.updateRoute { it.copy(days = d, minutesPerDay = 300) }
         }
+        // 画面の確認用：マップで小間を開く
+        intent?.getStringExtra(EXTRA_MAP_BOOTH)?.let { viewModel.showOnMap(it) }
         intent?.getStringExtra(EXTRA_PRESET)?.let { name ->
             ReportPreset.entries.firstOrNull { it.name == name }?.let { preset ->
                 viewModel.selectTab(AppTab.VENUE)
@@ -85,5 +90,7 @@ class MainActivity : ComponentActivity() {
         const val EXTRA_REPORT_ITEM = "report_item"
         const val EXTRA_REPORT_ADD = "report_add"
         const val EXTRA_ROUTE_DAYS = "route_days"
+        const val EXTRA_PROFILE = "profile"
+        const val EXTRA_MAP_BOOTH = "map_booth"
     }
 }

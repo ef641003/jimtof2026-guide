@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CircularProgressIndicator
@@ -166,7 +167,7 @@ fun VenueScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenUr
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ReportPreset.entries.forEach { preset ->
+                    vm.activeProfile.presets.forEach { preset ->
                         FilterChip(
                             selected = vm.reportPreset == preset,
                             onClick = { vm.selectReportPreset(preset) },
@@ -196,10 +197,9 @@ fun VenueScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenUr
                         )
                     }
                 },
-                onShowOnMap = { hallId ->
+                onShowOnMap = { booth ->
                     focusManager.clearFocus()
-                    vm.resetSearch()
-                    vm.focusHall(hallId)
+                    vm.showOnMap(booth)
                 },
                 onOpenUrl = onOpenUrl,
             )
@@ -279,8 +279,7 @@ fun VenueScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenUr
     reportTarget?.let { target ->
         ReportPickDialog(
             exhibitor = target,
-            items = vm.reportData?.items?.map { it.id to it.short }
-                ?: listOf("w1" to "①切削工具", "w2" to "②保持具", "w3" to "③測定機器"),
+            items = vm.reportData?.items?.map { it.id to it.short }.orEmpty(),
             onPick = { itemId ->
                 val added = vm.addReportCompany(itemId, target)
                 reportTarget = null
@@ -632,11 +631,11 @@ private fun ExhibitorCard(
                 Text(if (noveltyNote != null) "ノベルティのメモを編集" else "ノベルティを記録")
             }
             TextButton(onClick = { novelty.onAddToReport(ex) }) { Text("レポートに追加") }
-            location?.let { loc ->
-                val hallId = hallIdFor(loc.hallId)
-                TextButton(onClick = { onShowOnMap(hallId) }) { Text("地図で見る") }
-                TextButton(onClick = { onOpenUrl(officialBoothMapUrl(loc.hallId, BoothCode.normalize(primaryBooth))) }) {
-                    Text("公式小間割図")
+            if (location != null) {
+                TextButton(onClick = { onShowOnMap(primaryBooth) }) {
+                    Icon(Icons.Filled.Place, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("マップで見る")
                 }
             }
         }

@@ -13,7 +13,7 @@ import java.io.File
 class BoothChecklistTest {
 
     private val report by lazy {
-        ReportParser.parse(File("src/main/assets/report.json").readText(Charsets.UTF_8))
+        ReportParser.parse(File("src/main/assets/report_west.json").readText(Charsets.UTF_8))
     }
 
     @Test

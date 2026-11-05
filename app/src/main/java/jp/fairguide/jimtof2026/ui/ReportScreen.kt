@@ -100,7 +100,10 @@ fun ReportScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenU
 
     if (vm.reportItemId == RouteSettings.ID) {
         RouteScreen(vm = vm, data = data, snackbarHostState = snackbarHostState) {
-            ReportItemChips(data = data, notes = notes, selectedId = RouteSettings.ID, onSelect = { vm.selectReportItem(it) })
+            Column {
+                ProfileLine(vm)
+                ReportItemChips(data = data, notes = notes, selectedId = RouteSettings.ID, onSelect = { vm.selectReportItem(it) })
+            }
         }
         return
     }
@@ -120,6 +123,7 @@ fun ReportScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenU
     ) {
         item(key = "items") {
             Column {
+                ProfileLine(vm)
                 ReportItemChips(data = data, notes = notes, selectedId = item.id, onSelect = { vm.selectReportItem(it) })
                 Row(modifier = Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     FilledTonalButton(
@@ -190,6 +194,10 @@ fun ReportScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenU
                         snackbarHostState.showSnackbar(if (added) "ブースリストに追加しました" else "すでにブースリストにあります")
                     }
                 },
+                onShowOnMap = {
+                    vm.setMapItemFilter(null)
+                    vm.showOnMap(row.booth)
+                },
                 onOpenUrl = onOpenUrl,
             )
         }
@@ -219,6 +227,20 @@ fun ReportScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenU
             },
             onDismiss = { noteTarget = null },
         )
+    }
+}
+
+/** いまの担当と、切り替えのボタン */
+@Composable
+internal fun ProfileLine(vm: AppViewModel) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = "担当：" + vm.activeProfile.label,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        TextButton(onClick = { vm.openProfileChooser() }) { Text("切り替え") }
     }
 }
 
@@ -312,6 +334,7 @@ private fun CompanyCard(
     inMyList: Boolean,
     onNote: () -> Unit,
     onAddToMyList: () -> Unit,
+    onShowOnMap: () -> Unit,
     onOpenUrl: (String) -> Unit,
 ) {
     val location = remember(row.booth) { BoothCode.locate(row.booth) }
@@ -400,6 +423,13 @@ private fun CompanyCard(
                 Icon(if (inMyList) Icons.Filled.Check else Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
                 Text(if (inMyList) "リスト済み" else "ブースリストへ")
+            }
+            if (location != null) {
+                TextButton(onClick = onShowOnMap) {
+                    Icon(Icons.Filled.Place, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("マップで見る")
+                }
             }
         }
     }

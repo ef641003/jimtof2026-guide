@@ -93,20 +93,14 @@ object ReportParser {
 }
 
 object ReportRepository {
-    private const val ASSET_NAME = "report.json"
+    private val cached = java.util.concurrent.ConcurrentHashMap<String, ReportData>()
 
-    @Volatile
-    private var cached: ReportData? = null
+    /** 担当ごとのおすすめ（assets/report_*.json） */
+    fun get(context: Context, profile: ViewerProfile): ReportData =
+        cached.getOrPut(profile.reportAsset) { load(context.applicationContext, profile.reportAsset) }
 
-    fun get(context: Context): ReportData {
-        cached?.let { return it }
-        return synchronized(this) {
-            cached ?: load(context.applicationContext).also { cached = it }
-        }
-    }
-
-    private fun load(context: Context): ReportData =
-        context.assets.open(ASSET_NAME).bufferedReader(Charsets.UTF_8).use { ReportParser.parse(it.readText()) }
+    private fun load(context: Context, asset: String): ReportData =
+        context.assets.open(asset).bufferedReader(Charsets.UTF_8).use { ReportParser.parse(it.readText()) }
 }
 
 /** 自分で項目に足した会社 */

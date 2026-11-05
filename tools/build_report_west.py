@@ -12,7 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 EXHIBITORS = ROOT / "app/src/main/assets/exhibitors.json"
 FACTS = ROOT / "tools/report_west_facts.json"
-OUT = ROOT / "app/src/main/assets/report.json"
+OUT = ROOT / "app/src/main/assets/report_west.json"
 
 CAT_URL = "https://www.jimtof.org/jp/exhi_search_pronoun.html"
 

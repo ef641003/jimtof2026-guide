@@ -21,7 +21,7 @@ import java.io.File
 class RoutePlannerTest {
 
     private val report by lazy {
-        ReportParser.parse(File("src/main/assets/report.json").readText(Charsets.UTF_8))
+        ReportParser.parse(File("src/main/assets/report_west.json").readText(Charsets.UTF_8))
     }
 
     private fun stop(name: String, booth: String, items: List<String> = listOf("w1"), visited: Boolean = false) =

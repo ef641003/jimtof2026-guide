@@ -20,6 +20,10 @@ import jp.fairguide.jimtof2026.data.NoveltyRepository
 import jp.fairguide.jimtof2026.data.MyListStore
 import jp.fairguide.jimtof2026.data.ReminderStore
 import jp.fairguide.jimtof2026.data.ReportData
+import jp.fairguide.jimtof2026.data.BoothMapData
+import jp.fairguide.jimtof2026.data.BoothMapRepository
+import jp.fairguide.jimtof2026.data.ProfileStore
+import jp.fairguide.jimtof2026.data.ViewerProfile
 import jp.fairguide.jimtof2026.data.RouteSettings
 import jp.fairguide.jimtof2026.logic.RouteStop
 import jp.fairguide.jimtof2026.logic.BoothChecklist
@@ -52,9 +56,107 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val reminderStore = ReminderStore(application)
     private val noveltyNoteStore = NoveltyNoteStore(application)
     private val reportNoteStore = ReportNoteStore(application)
+    private val profileStore = ProfileStore(application)
 
-    var tab by mutableStateOf(AppTab.OVERVIEW)
+    var tab by mutableStateOf(AppTab.REPORT)
         private set
+
+    // ---- 担当（だれの視点で回るか） ----
+
+    /** 選んだ担当。まだ選んでいなければ null（最初に選ぶ画面を出す） */
+    var profile by mutableStateOf(profileStore.load())
+        private set
+
+    /** 担当を選ぶ画面を開いているか */
+    var choosingProfile by mutableStateOf(profile == null)
+        private set
+
+    /** 担当が決まるまでの仮の値（画面を組み立てるため） */
+    val activeProfile: ViewerProfile get() = profile ?: ViewerProfile.MAKER
+
+    fun openProfileChooser() {
+        choosingProfile = true
+    }
+
+    fun dismissProfileChooser() {
+        // まだ一度も選んでいなければ閉じない
+        if (profile != null) choosingProfile = false
+    }
+
+    fun chooseProfile(next: ViewerProfile) {
+        choosingProfile = false
+        if (next == profile) return
+        profile = next
+        profileStore.save(next)
+        // レポートのデータと検索の候補を、新しい担当のものにする（書いたメモは担当ごとに項目 id が違うので消えない）
+        reportData = null
+        loadingReport = false
+        if (reportPreset != null && reportPreset !in next.presets) reportPreset = null
+        updateRoute { it.copy(start = next.routeStart) }
+        ensureReport(resetItem = true)
+    }
+
+    // ---- 会場マップ ----
+
+    var boothMap by mutableStateOf<BoothMapData?>(null)
+        private set
+
+    /** マップで開いている図（公式小間割図の1枚。例：w1-2） */
+    var mapId by mutableStateOf<String?>(null)
+        private set
+
+    /** マップで選んでいる小間 */
+    var mapBooth by mutableStateOf<String?>(null)
+        private set
+
+    /** マップに重ねる印：レポートの項目（null なら全項目） */
+    var mapItemFilter by mutableStateOf<String?>(null)
+        private set
+
+    /** マップを開いたときに、選んだ小間へ寄せるための合図（同じ小間を2回押しても動くよう数える） */
+    var mapFocusTick by mutableStateOf(0)
+        private set
+
+    fun ensureBoothMap() {
+        if (boothMap != null) return
+        viewModelScope.launch {
+            val m = withContext(Dispatchers.Default) { BoothMapRepository.get(app) }
+            boothMap = m
+            if (mapId == null) mapId = m.maps.firstOrNull()?.id
+        }
+    }
+
+    fun selectMap(id: String) {
+        mapId = id
+        mapBooth = null
+    }
+
+    fun selectMapBooth(code: String?) {
+        mapBooth = code
+    }
+
+    /** 選んだ小間へ図を寄せる */
+    fun focusMapBooth() {
+        mapFocusTick++
+    }
+
+    fun setMapItemFilter(itemId: String?) {
+        mapItemFilter = itemId
+    }
+
+    /** レポート・ブース・検索から「マップで見る」 */
+    fun showOnMap(booth: String) {
+        val m = boothMap ?: BoothMapRepository.get(app).also { boothMap = it }
+        val found = m.find(booth)
+        if (found != null) {
+            mapId = found.first.id
+            mapBooth = found.second.code
+            mapFocusTick++
+        }
+        ensureReport()
+        ensureExhibitors()
+        tab = AppTab.MAP
+    }
 
     var scheduleDate by mutableStateOf<LocalDate?>(null)
         private set
@@ -117,6 +219,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         tab = target
         if (target == AppTab.VENUE) ensureExhibitors()
         if (target == AppTab.REPORT) ensureReport()
+        if (target == AppTab.MAP) {
+            ensureBoothMap()
+            ensureReport()
+            ensureExhibitors()
+        }
     }
 
     // ---- 見学レポート ----
@@ -135,13 +242,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     private var loadingReport = false
 
-    fun ensureReport() {
+    fun ensureReport(resetItem: Boolean = false) {
         if (reportData != null || loadingReport) return
         loadingReport = true
+        val target = activeProfile
         viewModelScope.launch {
-            val data = withContext(Dispatchers.Default) { ReportRepository.get(app) }
+            val data = withContext(Dispatchers.Default) { ReportRepository.get(app, target) }
+            if (target != activeProfile) return@launch // 読んでいるあいだに担当が変わった
             reportData = data
             loadingReport = false
+            if (resetItem || data.item(reportItemId) == null && reportItemId != RouteSettings.ID) {
+                reportItemId = data.items.first().id
+            }
             // 以前のビルドの項目 id が残っていて、どれも今の項目に無ければ全部の項目に戻す
             val ids = data.items.map { it.id }.toSet()
             if (reportNotes.route.itemIds.none { it in ids }) updateRoute { it.copy(itemIds = ids) }
@@ -395,13 +507,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     /** 画面の確認用：レポート項目の先頭から数社をブースリストに入れる */
     fun addFirstReportCompanies(itemId: String, count: Int) {
-        val data = reportData ?: runCatching { ReportRepository.get(app) }.getOrNull() ?: return
+        val data = reportData ?: runCatching { ReportRepository.get(app, activeProfile) }.getOrNull() ?: return
         data.item(itemId)?.companies?.take(count)?.forEach { addToMyListByName(it.name, it.booth) }
     }
 
     /** 見学レポートのおすすめにある「ブースで確かめること」（その会社がおすすめに無ければ空） */
     fun reportChecksFor(company: String, booth: String): List<String> =
-        BoothChecklist.fromReport(reportData ?: runCatching { ReportRepository.get(app) }.getOrNull(), company, booth)
+        BoothChecklist.fromReport(reportData ?: runCatching { ReportRepository.get(app, activeProfile) }.getOrNull(), company, booth)
 
     fun isInMyList(exhibitor: Exhibitor, booth: String): Boolean =
         myList.any { it.company == exhibitor.name && it.booth.equals(booth, ignoreCase = true) }
@@ -441,6 +553,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     /** チェックリストの項目を1つ付ける／外す */
     fun toggleCheck(id: Long, index: Int) {
         myList = myList.map { if (it.id == id) it.copy(checks = BoothChecklist.toggle(it.checks, index)) else it }
+        listStore.save(myList)
+    }
+
+    /** ブースリストのカードから、確かめることを1つ足す */
+    fun addCheck(id: Long, text: String) {
+        val t = text.trim()
+        if (t.isEmpty()) return
+        myList = myList.map { if (it.id == id) it.copy(checks = BoothChecklist.merge(it.checks, listOf(t))) else it }
         listStore.save(myList)
     }
 

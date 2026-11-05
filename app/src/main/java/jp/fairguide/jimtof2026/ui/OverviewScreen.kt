@@ -42,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import jp.fairguide.jimtof2026.data.Admission
 import jp.fairguide.jimtof2026.data.FairData
+import jp.fairguide.jimtof2026.data.ViewerProfile
 import jp.fairguide.jimtof2026.data.FairDay
 import jp.fairguide.jimtof2026.data.FairInfo
 import jp.fairguide.jimtof2026.data.Notice
@@ -71,8 +72,9 @@ fun OverviewScreen(
     now: ZonedDateTime,
     onOpenSchedule: () -> Unit,
     onOpenSearch: () -> Unit,
+    profile: ViewerProfile,
+    onChangeProfile: () -> Unit,
     onOpenLinks: () -> Unit,
-    onOpenReport: () -> Unit,
     onOpenUrl: (String) -> Unit,
 ) {
     val status = remember(now, data) { fairStatus(data.days, now) }
@@ -87,7 +89,7 @@ fun OverviewScreen(
     ) {
         item { HeroCard(data.info, status, data.days.size) }
         item { QuickActions(status, onOpenSearch, onOpenSchedule) }
-        item { AssignmentCard(onOpenReport) }
+        item { ProfileCard(profile, onChangeProfile) }
         if (notices.isNotEmpty()) {
             item { NoticeCard(notices) }
         }
@@ -131,34 +133,26 @@ fun OverviewScreen(
     }
 }
 
-/** 担当エリア（西展示棟）と、今年の会場での実際の場所 */
+/** いまの担当（レポートの項目・おすすめ・検索の候補が変わる） */
 @Composable
-private fun AssignmentCard(onOpenReport: () -> Unit) {
-    val west = GuideTheme.colors.west
+private fun ProfileCard(profile: ViewerProfile, onChange: () -> Unit) {
     Column {
-        SectionHeader("担当エリア：西展示棟")
-        GuideCard(accent = west.strong) {
-            Text("西展示棟（西1〜4ホール）", style = MaterialTheme.typography.titleMedium, color = west.strong)
+        SectionHeader("担当")
+        GuideCard {
+            Text(profile.label, style = MaterialTheme.typography.titleMedium)
             Text(
-                text = "主に切削工具（チップ、エンドミル、タップなど）、保持具（チャック、ホルダー）、測定機器の展示エリア。" +
-                    "ほかの展示棟も確認してください。",
-                modifier = Modifier.padding(top = 6.dp),
+                text = profile.items,
+                modifier = Modifier.padding(top = 4.dp),
                 style = MaterialTheme.typography.bodyMedium,
-            )
-            Text(
-                text = "今年の出展社カタログでは、切削工具の主要メーカーは西1ホール、保持具は西2ホールに集まっています。" +
-                    "測定機器の主要メーカー（ミツトヨ・東京精密・ニコン・レニショーなど）は東7ホールが中心で、キーエンスは南4です。",
-                modifier = Modifier.padding(top = 6.dp),
-                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             FilledTonalButton(
-                onClick = onOpenReport,
+                onClick = onChange,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 10.dp)
                     .height(48.dp),
-            ) { Text("テーマ別のおすすめ会社と回る順を見る") }
+            ) { Text("担当を切り替える") }
         }
     }
 }
