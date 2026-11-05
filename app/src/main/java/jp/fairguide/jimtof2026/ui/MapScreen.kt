@@ -135,6 +135,7 @@ fun MapScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenUrl:
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val wide = maxWidth >= 600.dp
+        val mapHeight = maxHeight * 0.5f
         val header: @Composable () -> Unit = {
             MapHeader(
                 maps = data.maps,
@@ -201,7 +202,7 @@ fun MapScreen(vm: AppViewModel, snackbarHostState: SnackbarHostState, onOpenUrl:
                     onTapBooth = { vm.selectMapBooth(it?.code) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(maxHeight * 0.5f)
+                        .height(mapHeight)
                         .padding(horizontal = 12.dp),
                 )
                 side(Modifier.weight(1f).fillMaxWidth())
@@ -287,6 +288,8 @@ private fun MapCanvas(
     var size by remember { mutableStateOf(IntSize.Zero) }
     var zoom by remember(map.id) { mutableFloatStateOf(1f) }
     var pan by remember(map.id) { mutableStateOf(Offset.Zero) }
+    // ホールの色（描画の中では Composable を呼べないので先に決める）
+    val hallColors = map.halls.associate { it.hallId to placeColorFor(it.hallId) }
     val paths = remember(map) {
         map.booths.associate { b ->
             b.code to Path().apply {
@@ -359,7 +362,7 @@ private fun MapCanvas(
             val k = base() * zoom
             // ホールの区画（色と名前）
             for (h in map.halls) {
-                val pc = placeColorFor(h.hallId)
+                val pc = hallColors.getValue(h.hallId)
                 val tl = toScreen(h.left - 40f, h.top - 120f)
                 val br = toScreen(h.right + 40f, h.bottom + 40f)
                 drawRoundRect(pc.container.copy(alpha = 0.35f), tl, Size(br.x - tl.x, br.y - tl.y), CornerRadius(10f, 10f))
@@ -387,7 +390,7 @@ private fun MapCanvas(
             // ホール名
             for (h in map.halls) {
                 val p = toScreen(h.left, h.top - 110f)
-                val t = measurer.measure(h.name, TextStyle(color = placeColorFor(h.hallId).strong, fontSize = 12.sp, fontWeight = FontWeight.Bold))
+                val t = measurer.measure(h.name, TextStyle(color = hallColors.getValue(h.hallId).strong, fontSize = 12.sp, fontWeight = FontWeight.Bold))
                 drawText(t, topLeft = p)
             }
             // 印（項目の①②…と★）と、拡大したときの小間番号
