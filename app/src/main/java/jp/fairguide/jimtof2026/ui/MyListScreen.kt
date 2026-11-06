@@ -313,6 +313,7 @@ private fun GroupHeader(label: String, hallId: String?) {
 }
 
 @Composable
+@OptIn(ExperimentalLayoutApi::class)
 private fun BoothRow(
     item: BoothItem,
     onToggle: () -> Unit,
@@ -412,8 +413,8 @@ private fun BoothRow(
                         }
                     }
                 }
-                // その場で確かめることを足す・マップで場所を見る
-                Row(modifier = Modifier.padding(top = 2.dp), verticalAlignment = Alignment.CenterVertically) {
+                // その場で確かめることを足す・マップで場所を見る（狭い画面では折り返す）
+                FlowRow(modifier = Modifier.padding(top = 2.dp)) {
                     if (!item.visited) {
                         TextButton(onClick = onAddCheck) {
                             Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -425,7 +426,7 @@ private fun BoothRow(
                         TextButton(onClick = onShowOnMap) {
                             Icon(Icons.Filled.Place, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text("マップ")
+                            Text("マップで見る")
                         }
                     }
                 }

@@ -376,15 +376,24 @@ private fun MapCanvas(
                 for (b in map.booths) {
                     val path = paths.getValue(b.code)
                     val mark = marks[b.code]
+                    val itemColor = mark?.entries?.firstNotNullOfOrNull { it.itemIds.firstOrNull() }?.let { itemColors[it] }
                     val fill = when {
-                        b == selected -> scheme.secondary
+                        b == selected -> (itemColor ?: scheme.primary).copy(alpha = 0.55f)
                         mark == null -> scheme.surface
                         mark.visited -> scheme.surfaceVariant
                         mark.fromReport -> (itemColors[mark.entries.first().itemIds.firstOrNull()] ?: scheme.primary).copy(alpha = 0.30f)
                         else -> guide.warn.container
                     }
                     drawPath(path, fill)
-                    drawPath(path, if (mark != null || b == selected) scheme.outline else scheme.outlineVariant, style = Stroke(if (b == selected) 3f * hair else hair))
+                    drawPath(
+                        path,
+                        when {
+                            b == selected -> scheme.onSurface
+                            mark != null -> scheme.outline
+                            else -> scheme.outlineVariant
+                        },
+                        style = Stroke(if (b == selected) 4f * hair else hair),
+                    )
                 }
             }
             // ホール名
@@ -417,8 +426,8 @@ private fun MapCanvas(
             }
             selected?.let { b ->
                 val c = toScreen(b.centerX, b.centerY)
-                val t = measurer.measure(b.code, TextStyle(color = scheme.onSecondary, fontSize = 11.sp, fontWeight = FontWeight.Bold))
-                drawRoundRect(scheme.secondary, Offset(c.x - t.size.width / 2f - 6f, c.y - t.size.height - 14f), Size(t.size.width + 12f, t.size.height + 4f), CornerRadius(8f, 8f))
+                val t = measurer.measure(b.code, TextStyle(color = scheme.surface, fontSize = 11.sp, fontWeight = FontWeight.Bold))
+                drawRoundRect(scheme.onSurface, Offset(c.x - t.size.width / 2f - 6f, c.y - t.size.height - 14f), Size(t.size.width + 12f, t.size.height + 4f), CornerRadius(8f, 8f))
                 drawText(t, topLeft = Offset(c.x - t.size.width / 2f, c.y - t.size.height - 12f))
             }
         }
